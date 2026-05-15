@@ -56,6 +56,7 @@ function parseArgs(argv) {
 
 function runCiValidation(options = {}) {
   const version = options.version || DEFAULT_VERSION;
+  runNpm('WASM build', ['run', 'build:wasm']);
   runNpm('Unit tests', ['test']);
   runNpm('Svelte and TypeScript component checks', ['run', 'check:svelte']);
   runNpm('Version alignment', ['run', 'version:check', '--', version]);
