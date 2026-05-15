@@ -1,21 +1,14 @@
-<table width="100%"><tr>
-<td align="left" width="66%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-privacy-guardrail-white.png">
+  <img align="left" alt="Privacy Guardrail" src="docs/assets/logo-privacy-guardrail-black.png" height="120">
+</picture>
+<a href="https://www.dfki.de/" title="Deutsches Forschungszentrum für Künstliche Intelligenz">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-privacy-guardrail-white.png">
-    <img alt="Privacy Guardrail" src="docs/assets/logo-privacy-guardrail-black.png" height="120">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/DFKI-Logo_ohne_RGB_weiss.png">
+    <img align="right" alt="DFKI" src="docs/assets/dfki_Logo_digital_black.png" height="72">
   </picture>
-</td>
-<td align="right" width="34%">
-  <a href="https://www.dfki.de/" title="Deutsches Forschungszentrum für Künstliche Intelligenz">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/DFKI-Logo_ohne_RGB_weiss.png">
-      <img alt="DFKI" src="docs/assets/dfki_Logo_digital_black.png" height="72">
-    </picture>
-  </a>
-</td>
-</tr></table>
-
----
+</a>
+<br clear="all">
 
 # Privacy Guardrail
 
