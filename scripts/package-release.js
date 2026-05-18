@@ -104,6 +104,10 @@ function assertVersionAligned(rootDir, version) {
 function isForbiddenPackageEntry(relativePath) {
   if (relativePath.endsWith('.map')) return true;
   if (FORBIDDEN_PACKAGE_FILES.has(path.basename(relativePath))) return true;
+  // Chrome Web Store rejects any nested file named manifest.json — it treats
+  // every one as a competing extension manifest. The prepared NER model dirs
+  // contain a metadata manifest.json that is not needed at runtime.
+  if (relativePath !== 'manifest.json' && path.basename(relativePath) === 'manifest.json') return true;
   return FORBIDDEN_PACKAGE_PREFIXES.some((prefix) => relativePath === prefix.slice(0, -1) || relativePath.startsWith(prefix));
 }
 

@@ -82,6 +82,8 @@ describe('official release packaging', () => {
     expect(isForbiddenPackageEntry('crate/pkg/privacy_guardrail_wasm.js')).toBe(true);
     expect(isForbiddenPackageEntry('node_modules/example/index.js')).toBe(true);
     expect(isForbiddenPackageEntry('background/service-worker.js')).toBe(false);
+    expect(isForbiddenPackageEntry('models/ner/bardsai-eu-pii-anonimization-multilang/manifest.json')).toBe(true);
+    expect(isForbiddenPackageEntry('manifest.json')).toBe(false);
   });
 
   test('lists Chrome package entries from dist without source maps or private/source-only paths', () => {
