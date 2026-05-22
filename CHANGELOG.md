@@ -4,6 +4,13 @@ All notable public changes to Privacy Guardrail will be documented in this file.
 
 The project follows public beta release notes for `0.x` versions.
 
+## [0.2.3] - Public Beta
+
+- Added BETA badge to the popup and options page headers
+- Filled in Impressum legal notice with provider, project, and DPO contacts
+- Adjusted accent color
+- Removed the GitHub Actions CI workflow (validation runs locally via `npm run validate:ci`)
+
 ## [0.2.2] - Public Beta
 
 - Shortened extension description to fit the Chrome Web Store 132-character limit

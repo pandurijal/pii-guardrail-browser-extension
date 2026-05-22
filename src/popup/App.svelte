@@ -19,7 +19,7 @@
       <div class="brand-row">
         <div class="logo-box"><PGLogo size={24} /></div>
         <div class="brand-copy">
-          <h1>Privacy Guardrail</h1>
+          <h1>Privacy Guardrail <span class="beta-badge" title="Public beta — features may change">BETA</span></h1>
           <p>v{$version} · {$modelLabel}</p>
         </div>
         <Toggle
@@ -157,6 +157,23 @@
     font-weight: 300;
     letter-spacing: -0.1px;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .beta-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--color-glow, #f59e0b);
+    color: #ffffff;
+    text-shadow: 0 0 1px #000;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    line-height: 1.4;
+    text-transform: uppercase;
+    vertical-align: middle;
   }
   .brand-copy p {
     margin: 1px 0 0;

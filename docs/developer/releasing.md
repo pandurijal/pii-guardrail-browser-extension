@@ -68,7 +68,7 @@ Model-free CI checks:
 npm run validate:ci
 ```
 
-This path is safe for GitHub Actions and pull requests. It runs Jest, Svelte checks, version alignment, Chrome permission checks, the privacy-boundary scan, Rust tests, and a model-free extension build. It does not download, prepare, or require large model assets. The current tree does not have a healthy ESLint setup, so lint is not part of CI yet.
+This path is safe for pull requests and local pre-release checks. It runs Jest, Svelte checks, version alignment, Chrome permission checks, the privacy-boundary scan, Rust tests, and a model-free extension build. It does not download, prepare, or require large model assets. The current tree does not have a healthy ESLint setup, so lint is not part of this path yet.
 
 Release-strict checks with prepared BardsAI assets:
 

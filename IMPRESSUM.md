@@ -7,7 +7,8 @@ Provider identification under § 5 DDG (Digitale-Dienste-Gesetz).
 Deutsches Forschungszentrum für Künstliche Intelligenz GmbH (DFKI)
 
 Geschäftsführung:
-*todo*
+Prof. Dr. Antonio Krüger
+Helmut Ditzer
 
 Trippstadter Str. 122,
 67663 Kaiserslautern
@@ -22,8 +23,8 @@ ID-Nummer: DE 148 646 973
 ## Responsible For This Project
 
 Department: Data Science and its Applications (DSA), DFKI
-Project lead: *todo*
-Project contact: *todo*
+Project lead: Prof. Dr. Sebastian Vollmer
+Project contact: sebastian.vollmer@dfki.de
 
 ## Data Protection Officer
 
@@ -33,7 +34,12 @@ Tel.: +49 631 20575 0; datenschutz@dfki.de
 
 Responsible for content under § 18 Abs. 2 MStV:
 
-*todo*
+Christian Heyer
+Trippstadter Str. 122
+67663 Kaiserslautern
+Deutschland
+Tel.: +49 631 20575 1710
+communications-kl@dfki.de
 
 ## Notes
 

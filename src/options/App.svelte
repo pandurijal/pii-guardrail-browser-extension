@@ -39,7 +39,7 @@
 		<div class="brand-row">
 			<div class="logo-box"><PGLogo size={24} /></div>
 			<div class="brand-copy">
-				<h1>Privacy Guardrail</h1>
+				<h1>Privacy Guardrail <span class="beta-badge" title="Public beta — features may change">BETA</span></h1>
 				<p>Extension Settings</p>
 			</div>
 			<a
@@ -171,6 +171,23 @@
 		font-size: 20px;
 		font-weight: 300;
 		letter-spacing: -0.1px;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.beta-badge {
+		display: inline-block;
+		padding: 2px 7px;
+		border-radius: 999px;
+		background: var(--color-glow, #f59e0b);
+		color: #fff;
+		text-shadow: 0 0 1px #000;
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.6px;
+		line-height: 1.4;
+		text-transform: uppercase;
+		vertical-align: middle;
 	}
 	.brand-copy p {
 		margin: 2px 0 0;
