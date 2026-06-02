@@ -13,6 +13,22 @@ The public beta package uses local model assets bundled with the extension when 
 
 Local AI may use WebGPU when Chrome and the device support it. If WebGPU is unavailable, the extension can use a CPU/WASM path. The CPU/WASM path can be slower, especially on large pastes or lower-memory devices.
 
+## Loading And Unloading
+
+Local AI is not the same thing as the Local AI runtime. The setting controls whether the model-backed detection layer is allowed to run; the runtime is the loaded in-browser model execution environment.
+
+When Local AI is turned off, Privacy Guardrail unloads the Local AI runtime so Chrome can reclaim those resources. Pattern detection remains active.
+
+When Local AI is on, the runtime may be loaded by a paste scan, an explicit warmup action, the popup on capable systems, or supported-page activity on capable systems. A capable system currently means:
+
+- browser-reported memory is greater than 14 GB
+- passive WebGPU availability is detected
+- the runtime is not known to be using CPU/WASM fallback
+
+The extension keeps an already-loaded runtime resident while the user is active on a foreground supported chat page. Activity is lightweight and local: keyboard input, paste, pointer/touch interaction, scroll, focus, and visibility changes are reduced to a throttled in-memory signal. Background tabs do not keep Local AI loaded.
+
+By default, the runtime unloads after 10 minutes of inactivity. The options page lets you choose 1, 5, 10, or 30 minutes, or keep it for the browser session. Automatic warmup on capable active supported pages is enabled by default and can be turned off in options.
+
 ## System Requirements
 
 Local AI inference is resource-intensive. The extension checks the browser-reported memory and WebGPU availability passively and adapts:
@@ -24,6 +40,8 @@ Local AI inference is resource-intensive. The extension checks the browser-repor
 - **Pattern-only detection** does not need WebGPU and is not affected by the memory thresholds.
 
 The browser only reports memory in coarse buckets, so these checks are heuristic. Real-world performance also depends on what else the browser and operating system are doing.
+
+Chrome does not expose reliable production GPU-memory information to the extension. Some WebGPU memory details exist only behind developer flags, so Privacy Guardrail does not use GPU-memory thresholds for Windows or other platforms today. On Apple silicon, system and GPU memory are shared, so the browser-reported memory threshold is the practical guardrail.
 
 ## Pattern-Only Fallback
 

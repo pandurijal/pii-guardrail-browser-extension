@@ -31,12 +31,20 @@ Privacy Guardrail public beta support is scoped to Chrome desktop stable and:
 
 Pattern-based detection can still run when Local AI is off or unavailable, but coverage is narrower.
 
+## Local AI Loads Or Unloads Unexpectedly
+
+- On capable systems, Local AI can warm automatically while you are active on a supported chat page. Capable means more than 14 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback.
+- Background tabs do not keep Local AI loaded.
+- Turning Local AI off unloads the Local AI runtime; pattern detection remains active.
+- By default, Local AI unloads after 10 minutes of inactivity. You can change the timeout or disable active-page warmup in options.
+
 ## Browser Is Slow
 
 - Wait for the scan to finish or cancel the scan.
 - Try pasting a shorter section.
 - Close unused tabs or apps.
 - Check whether the extension is using CPU/WASM fallback instead of WebGPU.
+- If Local AI is still too heavy, turn off active-page warmup or turn Local AI detection off in options. Pattern detection continues to run.
 
 ## Unsupported Site Expectations
 
