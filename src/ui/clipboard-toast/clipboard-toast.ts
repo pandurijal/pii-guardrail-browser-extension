@@ -98,7 +98,7 @@ export class ClipboardToast {
     this.shadow.innerHTML = `
       <style>${CLIPBOARD_TOAST_STYLES}</style>
       <div class="pg-toast" data-theme="${this.theme}" role="status" aria-live="polite">
-        <span class="pg-toast-msg">Copied — contains anonymized items. Replace with originals?</span>
+        <span class="pg-toast-msg">Copied — contains replaced items. Restore originals?</span>
         <button class="pg-toast-btn" type="button">Replace with originals</button>
       </div>
     `;

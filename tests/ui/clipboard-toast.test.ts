@@ -33,7 +33,7 @@ describe('ClipboardToast', () => {
 
     const host = getHost();
     expect(host).not.toBeNull();
-    expect(host?.shadowRoot?.textContent).toContain('contains anonymized items');
+    expect(host?.shadowRoot?.textContent).toContain('contains replaced items');
     const btn = host?.shadowRoot?.querySelector('.pg-toast-btn');
     expect(btn?.textContent).toBe('Replace with originals');
   });

@@ -85,9 +85,9 @@ export function attachDeAnonBanner(
     <style>${BANNER_STYLES}</style>
     <div class="pg-banner" data-theme="${theme}">
       <span class="pg-banner-icon">&#x1F512;</span>
-      <span class="pg-banner-text">${totalRevealable} anonymized item${totalRevealable !== 1 ? 's' : ''}</span>
+      <span class="pg-banner-text">${totalRevealable} replaced item${totalRevealable !== 1 ? 's' : ''}</span>
       <button class="pg-banner-btn" id="pg-reveal-btn">Reveal originals</button>
-      <button class="pg-banner-btn pg-banner-copy" id="pg-copy-btn" title="Copy de-anonymized text">Copy</button>
+      <button class="pg-banner-btn pg-banner-copy" id="pg-copy-btn" title="Copy restored text">Copy</button>
     </div>
   `;
 
