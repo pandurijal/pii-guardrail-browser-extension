@@ -12,7 +12,7 @@ import type {
 } from "../shared/message-types";
 import { loadSettings, saveSettings, logFeedback } from "../shared/storage";
 import { detectionOptionsFromSettings, fallbackNerStatus } from "../shared/detection-config";
-import { LOCAL_AI_ACTIVITY_WINDOW_MS } from "../shared/constants";
+import { DEFAULT_SETTINGS, LOCAL_AI_ACTIVITY_WINDOW_MS } from "../shared/constants";
 import { shouldAutoWarmLocalAi } from "../shared/local-ai-warmup-gate";
 import {
   buildSystemCheckResult,
@@ -673,8 +673,23 @@ chrome.tabs.onUpdated.addListener(async (_tabId, _changeInfo, tab) => {
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "local" && changes[SETTINGS_KEY]) {
+    const previousSettings = changes[SETTINGS_KEY].oldValue;
     const nextSettings = changes[SETTINGS_KEY].newValue;
+    // Normalize against the default so the one-time migration that stamps the
+    // dtype onto previously-stored settings does not tear down the runtime.
+    const previousWebGpuDtype = previousSettings?.nerWebGpuDtype ?? DEFAULT_SETTINGS.nerWebGpuDtype;
+    const nextWebGpuDtype = nextSettings?.nerWebGpuDtype ?? DEFAULT_SETTINGS.nerWebGpuDtype;
     if (nextSettings?.nerProvider === "off") {
+      void closeOffscreenBestEffort();
+    } else if (previousSettings?.enabled !== false && nextSettings?.enabled === false) {
+      // The global toggle stops all detection, so keeping the NER model in
+      // memory only burns RAM. Tear it down on the off-transition; leaving it
+      // alone on other writes while disabled avoids needless churn.
+      void closeOffscreenBestEffort();
+    } else if (previousWebGpuDtype !== nextWebGpuDtype) {
+      // A loaded pipeline pins its ONNX artifact (and its GPU/wasm memory).
+      // Closing the offscreen document frees it; the next detection recreates
+      // the document and loads the newly selected artifact.
       void closeOffscreenBestEffort();
     } else {
       void scheduleOffscreenIdleUnload();

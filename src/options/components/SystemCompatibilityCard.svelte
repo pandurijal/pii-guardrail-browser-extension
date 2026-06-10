@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
-	import type { LocalAiUnloadTimeoutMs, NerModelKey, Settings, SystemCompatibilityStatus } from '../../shared/message-types';
-	import { LOCAL_AI_UNLOAD_TIMEOUT_CHOICES, NER_MODELS } from '../../shared/constants';
+	import type { LocalAiUnloadTimeoutMs, Settings, SystemCompatibilityStatus } from '../../shared/message-types';
+	import { LOCAL_AI_UNLOAD_TIMEOUT_CHOICES, nerModelChoices, nerModelChoiceValue } from '../../shared/constants';
 	import { AI_TRANSPARENCY_NOTICE } from '../../shared/project-links';
 	import CardHeading from '../../popup/components/CardHeading.svelte';
 
@@ -12,7 +12,7 @@
 		setLocalAiDetection,
 		retryLocalAi,
 		rerunSystemCheck,
-		setNerModel,
+		setNerModelChoice,
 		setLocalAiUnloadTimeoutMs,
 		setKeepLocalAiLoadedWhileActive,
 		setAutoWarmLocalAiOnActiveSupportedPage,
@@ -23,7 +23,7 @@
 		setLocalAiDetection: (enabled: boolean) => Promise<void>;
 		retryLocalAi: () => Promise<void>;
 		rerunSystemCheck: () => Promise<void>;
-		setNerModel: (model: NerModelKey) => Promise<void>;
+		setNerModelChoice: (value: string) => Promise<void>;
 		setLocalAiUnloadTimeoutMs: (value: LocalAiUnloadTimeoutMs) => Promise<void>;
 		setKeepLocalAiLoadedWhileActive: (enabled: boolean) => Promise<void>;
 		setAutoWarmLocalAiOnActiveSupportedPage: (enabled: boolean) => Promise<void>;
@@ -81,6 +81,18 @@
 		($status?.localAiState === 'off-load-failure' || $warmupState === 'failed') && $warmupState !== 'loading',
 	);
 
+	const modelChoices = nerModelChoices();
+	let modelChoiceValue = $derived(
+		nerModelChoiceValue($settings?.nerModel ?? 'bardsai', $settings?.nerWebGpuDtype),
+	);
+
+	let webGpuDtypeHint = $derived.by(() => {
+		const choice = $settings?.nerWebGpuDtype ?? 'q4f16';
+		return choice === 'fp16'
+			? 'fp16: full-precision model — slightly more RAM and about twice the GPU memory of the 4-bit (q4f16) model.'
+			: 'q4f16: 4-bit model — about 1 GB of RAM while loaded.';
+	});
+
 	function timeoutLabel(value: LocalAiUnloadTimeoutMs): string {
 		if (value === null) return 'Browser session';
 		return `${Math.round(value / 60000)} min`;
@@ -122,14 +134,19 @@
 			<label class="model-label" for="local-ai-model">Local AI model</label>
 			<select
 				id="local-ai-model"
-				value={$settings?.nerModel ?? 'bardsai'}
+				value={modelChoiceValue}
 				disabled={modelPickerDisabled}
-				onchange={(event) => setNerModel(event.currentTarget.value as NerModelKey)}
+				onchange={(event) => setNerModelChoice(event.currentTarget.value)}
 			>
-				{#each NER_MODELS as model (model.key)}
-					<option value={model.key}>{model.label}</option>
+				{#each modelChoices as choice (choice.value)}
+					<option value={choice.value}>{choice.label}</option>
 				{/each}
 			</select>
+			<p class="hint">
+				{webGpuDtypeHint}
+				The quantization only applies when the model runs on the GPU (WebGPU); the CPU
+				fallback always uses the compact model.
+			</p>
 			{#if $warmupState === 'loading'}
 				<p class="hint">Loading Local AI detection…</p>
 			{/if}

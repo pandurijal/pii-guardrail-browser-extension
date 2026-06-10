@@ -2,7 +2,7 @@
 	import type { Readable, Writable } from 'svelte/store';
 	import type { FeedbackCounts } from '../popup-model.svelte';
 	import type { NerModelKey, Settings } from '../../shared/message-types';
-	import type { ACTIVE_NER_MODELS } from '../../shared/constants';
+	import type { NerModelChoice } from '../../shared/constants';
 	import Toggle from './Toggle.svelte';
 	import LegalCard from './LegalCard.svelte';
 
@@ -11,14 +11,15 @@
 		debug,
 		clipboardInterceptEnabled,
 		nerModel,
-		availableNerModels,
+		nerModelChoice,
+		nerModelChoices,
 		sensitivityMode,
 		feedbackCounts,
 		mappingCount,
 		setMinConfidence,
 		setDebug,
 		setClipboardInterceptEnabled,
-		setNerModel,
+		setNerModelChoice,
 		openOptions,
 		openIssueReport,
 		openSecurityReport,
@@ -32,14 +33,15 @@
 		debug: Writable<boolean>;
 		clipboardInterceptEnabled: Writable<boolean>;
 		nerModel: Writable<NerModelKey>;
-		availableNerModels: typeof ACTIVE_NER_MODELS;
+		nerModelChoice: Writable<string>;
+		nerModelChoices: readonly NerModelChoice[];
 		sensitivityMode: Writable<Settings['sensitivityMode']>;
 		feedbackCounts: Writable<FeedbackCounts>;
 		mappingCount: Writable<number>;
 		setMinConfidence: (value: number) => Promise<void>;
 		setDebug: (enabled: boolean) => Promise<void>;
 		setClipboardInterceptEnabled: (enabled: boolean) => Promise<void>;
-		setNerModel: (model: NerModelKey) => Promise<void>;
+		setNerModelChoice: (value: string) => Promise<void>;
 		openOptions: () => void;
 		openIssueReport: () => void;
 		openSecurityReport: () => void;
@@ -70,9 +72,9 @@
 		<div class="divider"></div>
 		<div class="row">
 			<div><div class="row-label">NER model</div><div class="row-meta">Local transformer used for detection</div></div>
-			<select value={$nerModel} onchange={(event) => setNerModel(event.currentTarget.value as NerModelKey)}>
-				{#each availableNerModels as model (model.key)}
-					<option value={model.key}>{model.label}</option>
+			<select value={$nerModelChoice} onchange={(event) => setNerModelChoice(event.currentTarget.value)}>
+				{#each nerModelChoices as choice (choice.value)}
+					<option value={choice.value}>{choice.label}</option>
 				{/each}
 			</select>
 		</div>

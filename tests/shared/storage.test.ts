@@ -66,6 +66,33 @@ describe('settings storage', () => {
     );
   });
 
+  test('defaults missing and invalid WebGPU dtype preferences to the low-memory artifact', async () => {
+    const { nerWebGpuDtype: _omitted, ...storedBeforeFlag } = DEFAULT_SETTINGS;
+    (chrome.storage.local.get as jest.Mock)
+      .mockResolvedValueOnce({ pg_settings: storedBeforeFlag })
+      .mockResolvedValueOnce({ pg_settings: { ...DEFAULT_SETTINGS, nerWebGpuDtype: 'q8' } });
+
+    await expect(loadSettings()).resolves.toEqual(
+      expect.objectContaining({ nerWebGpuDtype: 'q4f16' })
+    );
+    // 'q8' is a valid artifact but never a WebGPU preference — reject it too.
+    await expect(loadSettings()).resolves.toEqual(
+      expect.objectContaining({ nerWebGpuDtype: 'q4f16' })
+    );
+  });
+
+  test('persists the maximum-accuracy WebGPU dtype preference', async () => {
+    (chrome.storage.local.get as jest.Mock).mockResolvedValueOnce({
+      pg_settings: DEFAULT_SETTINGS,
+    });
+
+    await saveSettings({ nerWebGpuDtype: 'fp16' });
+
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      pg_settings: expect.objectContaining({ nerWebGpuDtype: 'fp16' }),
+    });
+  });
+
   test('defaults existing stored settings to clipboard interception enabled', async () => {
     const { clipboardInterceptEnabled: _omitted, ...storedBeforeFlag } = DEFAULT_SETTINGS;
     (chrome.storage.local.get as jest.Mock).mockResolvedValueOnce({

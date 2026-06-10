@@ -1,6 +1,6 @@
-import type { Settings, FeedbackEntry, NerModelKey, NerProviderMode, GroupName, AllowlistEntry, BlocklistEntry, CancelDetectionBehavior, LocalAiUnloadTimeoutMs } from './message-types';
+import type { Settings, FeedbackEntry, NerModelKey, NerProviderMode, NerWebGpuDtype, GroupName, AllowlistEntry, BlocklistEntry, CancelDetectionBehavior, LocalAiUnloadTimeoutMs } from './message-types';
 import { ENTITY_TYPES } from './message-types';
-import { DEFAULT_SETTINGS, LOCAL_AI_UNLOAD_TIMEOUT_CHOICES, runtimeNerModelKey } from './constants';
+import { DEFAULT_SETTINGS, LOCAL_AI_UNLOAD_TIMEOUT_CHOICES, NER_WEBGPU_DTYPE_CHOICES, runtimeNerModelKey } from './constants';
 import { GROUP_NAMES, GROUP_DEFAULT_ON } from './category-groups';
 
 const SETTINGS_KEY = 'pg_settings';
@@ -26,6 +26,10 @@ function isNerProviderMode(value: unknown): value is NerProviderMode {
 
 function isNerModelKey(value: unknown): value is NerModelKey {
   return value === 'ai4privacy' || value === 'bardsai' || value === 'hikmaai';
+}
+
+function isNerWebGpuDtype(value: unknown): value is NerWebGpuDtype {
+  return (NER_WEBGPU_DTYPE_CHOICES as readonly unknown[]).includes(value);
 }
 
 function normalizeGroupsEnabled(raw: unknown): Record<GroupName, boolean> {
@@ -94,6 +98,9 @@ function normalizeSettings(raw: unknown): Settings {
     settings.nerModel = DEFAULT_SETTINGS.nerModel;
   } else {
     settings.nerModel = runtimeNerModelKey(settings.nerModel);
+  }
+  if (!isNerWebGpuDtype(settings.nerWebGpuDtype)) {
+    settings.nerWebGpuDtype = DEFAULT_SETTINGS.nerWebGpuDtype;
   }
   if (settings.sensitivityMode !== 'global' && settings.sensitivityMode !== 'individual') {
     settings.sensitivityMode = 'global';

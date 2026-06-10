@@ -26,8 +26,21 @@ const REQUIRED_MODEL_ASSETS = [
   'tokenizer.json',
   'tokenizer_config.json',
   path.join('onnx', 'model_quantized.onnx'),
+  // Both WebGPU artifacts ship as ONNX external data (graph protobuf +
+  // sidecar weights): an embedded-weight protobuf makes ORT's session init
+  // copy all weights through the (never-shrinking) wasm heap several times.
+  // WebGPU default: q4f16.
+  path.join('onnx', 'model_q4f16.onnx'),
+  path.join('onnx', 'model_q4f16.onnx.data'),
+  // WebGPU "maximum accuracy" option, selectable from the options page.
   path.join('onnx', 'model_fp16.onnx'),
+  path.join('onnx', 'model_fp16.onnx.data'),
 ];
+
+// Conversion inputs/intermediates that may sit next to the prepared model
+// assets but must never ship in the extension. The q4f16 conversion writes a
+// 530 MB fp16 intermediate next to the real artifacts.
+const EXCLUDED_MODEL_ASSET_GLOBS = ['**/model_fp16.q4f16-intermediate.onnx'];
 
 const ONNX_RUNTIME_ASSETS = [
   // CPU/WASM path: ner-provider.ts pins wasmPaths to these when the
@@ -83,6 +96,7 @@ function getNerAssetCopyPatterns(rootDir = process.cwd()) {
       from: resolveFromRoot(rootDir, ACTIVE_PREPARED_MODEL_SOURCE_DIR),
       to: ACTIVE_PACKAGED_MODEL_DIR,
       noErrorOnMissing: true,
+      globOptions: { ignore: EXCLUDED_MODEL_ASSET_GLOBS },
     },
     {
       from: resolveFromRoot(rootDir, PREPARED_HIKMAAI_MODEL_SOURCE_DIR),
@@ -137,6 +151,7 @@ class LocalNerAssetsPlugin {
 module.exports = {
   ACTIVE_PACKAGED_MODEL_DIR,
   ACTIVE_PREPARED_MODEL_SOURCE_DIR,
+  EXCLUDED_MODEL_ASSET_GLOBS,
   LocalNerAssetsPlugin,
   ONNX_RUNTIME_ASSETS,
   PACKAGED_BARDSAI_MODEL_DIR,

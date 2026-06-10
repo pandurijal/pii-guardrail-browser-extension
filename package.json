@@ -1,6 +1,6 @@
 {
   "name": "privacy-guardrail",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "private": true,
   "description": "Chrome extension that detects and replaces PII before pasting into LLM chats",
   "scripts": {
@@ -14,6 +14,9 @@
     "convert:model:fp16": "node scripts/convert-source-models-to-fp16.js",
     "convert:model:fp16:bardsai": "node scripts/convert-source-models-to-fp16.js --model bardsai",
     "convert:model:fp16:hikmaai": "node scripts/convert-source-models-to-fp16.js --model hikmaai",
+    "convert:model:external-data": "node scripts/convert-onnx-to-external-data.js",
+    "convert:model:q4f16": "node scripts/convert-source-models-to-q4f16.js",
+    "convert:model:q4f16:bardsai": "node scripts/convert-source-models-to-q4f16.js --model bardsai",
     "version:set": "node scripts/version.js set",
     "version:check": "node scripts/version.js check",
     "validate:ci": "node scripts/validate.js ci",

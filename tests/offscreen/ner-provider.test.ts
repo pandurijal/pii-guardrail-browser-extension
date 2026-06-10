@@ -177,7 +177,7 @@ describe('transformers NER provider', () => {
     expect(provider.getDevice?.()).toBe('webgpu');
   });
 
-  test('uses BardsAI fp16 artifact on WebGPU by default', async () => {
+  test('uses BardsAI q4f16 external-data artifact on WebGPU by default', async () => {
     const onnxWasm: any = {};
     const env: any = {
       allowRemoteModels: true,
@@ -202,7 +202,10 @@ describe('transformers NER provider', () => {
     await provider.detect('no pii here');
 
     expect(assetExists).toHaveBeenCalledWith(
-      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx'
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx'
+    );
+    expect(assetExists).toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx.data'
     );
     expect(assetExists).not.toHaveBeenCalledWith(
       'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_quantized.onnx'
@@ -211,12 +214,112 @@ describe('transformers NER provider', () => {
       'token-classification',
       'ner/bardsai-eu-pii-anonimization-multilang',
       {
-        dtype: 'fp16',
+        dtype: 'q4f16',
         local_files_only: true,
         device: 'webgpu',
+        // The external-data `path` must match the `location` recorded inside
+        // model_q4f16.onnx; `data` is resolved relative to the model dir.
+        session_options: {
+          externalData: [
+            { path: 'model_q4f16.onnx.data', data: 'onnx/model_q4f16.onnx.data' },
+          ],
+        },
       }
     );
     expect(provider.getDevice?.()).toBe('webgpu');
+  });
+
+  test('honors the fp16 WebGPU preference with its external-data artifact', async () => {
+    const onnxWasm: any = {};
+    const env: any = {
+      allowRemoteModels: true,
+      allowLocalModels: false,
+      localModelPath: '',
+      useBrowserCache: true,
+      useFSCache: true,
+      useWasmCache: true,
+      backends: { onnx: { wasm: onnxWasm } },
+    };
+    const classifier = jest.fn().mockResolvedValue([]);
+    const pipeline = jest.fn().mockResolvedValue(classifier);
+    const assetExists = jest.fn().mockResolvedValue(true);
+    const provider = createTransformersNerProvider({
+      modelKey: 'bardsai',
+      webGpuDtypePreference: 'fp16',
+      getExtensionUrl: extensionUrl,
+      assetExists,
+      detectWebGpu: jest.fn().mockResolvedValue(true),
+      loadTransformers: jest.fn().mockResolvedValue({ env, pipeline }),
+    });
+
+    await provider.detect('no pii here');
+
+    expect(assetExists).toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx'
+    );
+    expect(assetExists).toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx.data'
+    );
+    expect(assetExists).not.toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx'
+    );
+    expect(assetExists).not.toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx.data'
+    );
+    // fp16 ships as external data too — same wasm-heap rationale as q4f16.
+    expect(pipeline).toHaveBeenCalledWith(
+      'token-classification',
+      'ner/bardsai-eu-pii-anonimization-multilang',
+      {
+        dtype: 'fp16',
+        local_files_only: true,
+        device: 'webgpu',
+        session_options: {
+          externalData: [
+            { path: 'model_fp16.onnx.data', data: 'onnx/model_fp16.onnx.data' },
+          ],
+        },
+      }
+    );
+    expect(provider.getDevice?.()).toBe('webgpu');
+  });
+
+  test('ignores the WebGPU dtype preference on the WASM fallback path', async () => {
+    const env: any = {
+      allowRemoteModels: true,
+      allowLocalModels: false,
+      localModelPath: '',
+      useBrowserCache: true,
+      useFSCache: true,
+      useWasmCache: true,
+      backends: { onnx: { wasm: {} } },
+    };
+    const classifier = jest.fn().mockResolvedValue([]);
+    const pipeline = jest.fn().mockResolvedValue(classifier);
+    const assetExists = jest.fn().mockResolvedValue(true);
+    const provider = createTransformersNerProvider({
+      modelKey: 'bardsai',
+      webGpuDtypePreference: 'fp16',
+      getExtensionUrl: extensionUrl,
+      assetExists,
+      detectWebGpu: jest.fn().mockResolvedValue(false),
+      loadTransformers: jest.fn().mockResolvedValue({ env, pipeline }),
+    });
+
+    await provider.detect('no pii here');
+
+    expect(assetExists).toHaveBeenCalledWith(
+      'chrome-extension://test/models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_quantized.onnx'
+    );
+    expect(pipeline).toHaveBeenCalledWith(
+      'token-classification',
+      'ner/bardsai-eu-pii-anonimization-multilang',
+      {
+        dtype: 'q8',
+        local_files_only: true,
+        device: 'wasm',
+      }
+    );
   });
 
   test('reports missing local model or runtime assets before loading Transformers.js', async () => {
@@ -314,6 +417,17 @@ describe('transformers NER provider', () => {
     const second = createNerProvider('transformers');
 
     expect(first).toBe(second);
+  });
+
+  test('default provider factory keys the cache on the WebGPU dtype preference', () => {
+    const balanced = createNerProvider('transformers', 'bardsai', 'q4f16');
+    const maxAccuracy = createNerProvider('transformers', 'bardsai', 'fp16');
+
+    // A loaded pipeline pins its ONNX artifact, so switching the preference
+    // must not reuse the stale provider instance.
+    expect(maxAccuracy).not.toBe(balanced);
+    expect(createNerProvider('transformers', 'bardsai', 'fp16')).toBe(maxAccuracy);
+    expect(createNerProvider('transformers', 'bardsai', 'q4f16')).toBe(balanced);
   });
 
   test('maps representative AI4Privacy labels into the compact entity taxonomy', () => {

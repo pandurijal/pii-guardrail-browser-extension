@@ -27,7 +27,10 @@ function writePreparedModel(root) {
   writeFile(path.join(modelRoot, 'tokenizer.json'), '{}\n');
   writeFile(path.join(modelRoot, 'tokenizer_config.json'), '{}\n');
   writeFile(path.join(modelRoot, 'onnx', 'model_quantized.onnx'), 'onnx');
+  writeFile(path.join(modelRoot, 'onnx', 'model_q4f16.onnx'), 'q4f16');
+  writeFile(path.join(modelRoot, 'onnx', 'model_q4f16.onnx.data'), 'q4f16-data');
   writeFile(path.join(modelRoot, 'onnx', 'model_fp16.onnx'), 'fp16');
+  writeFile(path.join(modelRoot, 'onnx', 'model_fp16.onnx.data'), 'fp16-data');
 }
 
 function writeOnnxRuntime(root) {
@@ -82,7 +85,10 @@ describe('extension NER asset packaging', () => {
       'tokenizer.json',
       'tokenizer_config.json',
       'onnx/model_quantized.onnx',
+      'onnx/model_q4f16.onnx',
+      'onnx/model_q4f16.onnx.data',
       'onnx/model_fp16.onnx',
+      'onnx/model_fp16.onnx.data',
     ]);
 
     writePreparedModel(tempRoot);
@@ -104,6 +110,9 @@ describe('extension NER asset packaging', () => {
           from: path.join(tempRoot, ACTIVE_PREPARED_MODEL_SOURCE_DIR),
           to: ACTIVE_PACKAGED_MODEL_DIR,
           noErrorOnMissing: true,
+          // Only the q4f16 conversion intermediate must not ship — the real
+          // model_fp16.onnx is a selectable WebGPU artifact and must pass.
+          globOptions: { ignore: ['**/model_fp16.q4f16-intermediate.onnx'] },
         }),
         expect.objectContaining({
           from: path.join(tempRoot, PREPARED_HIKMAAI_MODEL_SOURCE_DIR),

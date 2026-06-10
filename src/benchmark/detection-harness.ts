@@ -1,13 +1,22 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseBenchmarkCorpusJsonl, type BenchmarkCorpus, type BenchmarkExample } from './contracts';
-import { DEFAULT_NER_MODEL, DEFAULT_SETTINGS, NER_MODELS, nerModelDefinitionFor } from '../shared/constants';
+import {
+  DEFAULT_NER_MODEL,
+  DEFAULT_SETTINGS,
+  NER_DTYPE_FILE_SUFFIX,
+  NER_MODELS,
+  type NerDtype,
+  nerModelDefinitionFor,
+} from '../shared/constants';
 import type { DetectionOptions, NerModelKey, NerStatus, PiiSpan } from '../shared/message-types';
+import { requiredAssetsForDtype, type NerProvider } from '../offscreen/ner-provider';
 import { createBenchmarkReport, formatBenchmarkReport } from './reporting';
 
 export interface BenchmarkCliOptions {
   corpusPath: string;
   model: NerModelKey;
+  dtype?: NerDtype;
   regexOnly: boolean;
   outputPath?: string;
   rootDir: string;
@@ -45,6 +54,7 @@ export interface BenchmarkDetector {
 export interface RunBenchmarkDetectionOptions {
   corpusPath: string;
   model?: NerModelKey;
+  dtype?: NerDtype;
   regexOnly?: boolean;
   outputPath?: string;
   rootDir?: string;
@@ -71,6 +81,7 @@ Usage:
 Options:
   --corpus <path>     Benchmark JSONL corpus. Default: ${DEFAULT_CORPUS_PATH}
   --model <key>       Transformer model to run: ${NER_MODELS.map((model) => model.key).join(', ')}. Default: ${DEFAULT_NER_MODEL}
+  --dtype <dtype>     ONNX artifact to load: ${Object.keys(NER_DTYPE_FILE_SUFFIX).join(', ')}. Default: q8 (the WASM-path artifact).
   --regex-only        Disable NER and run the final WASM regex/merge path only.
   --out <path>        Optional JSON output path for the raw detection run.
   --help              Show this help.
@@ -104,6 +115,9 @@ export function parseBenchmarkCliArgs(
         break;
       case '--model':
         options.model = parseModelKey(next());
+        break;
+      case '--dtype':
+        options.dtype = parseDtype(next());
         break;
       case '--regex-only':
         options.regexOnly = true;
@@ -139,11 +153,12 @@ export function createBenchmarkDetectionConfig(options: {
 
 export function validateBenchmarkModelAssets(
   rootDir: string,
-  modelKey: NerModelKey
+  modelKey: NerModelKey,
+  dtype: NerDtype = 'q8'
 ): void {
   const model = nerModelDefinitionFor(modelKey);
   const missing = [
-    ...model.requiredAssets.filter((assetPath) => !fileExists(resolvePackagedAsset(rootDir, assetPath))),
+    ...requiredAssetsForDtype(model, dtype).filter((assetPath) => !fileExists(resolvePackagedAsset(rootDir, assetPath))),
     ...REQUIRED_RUNTIME_ASSETS
       .map((fileName) => `vendor/onnxruntime-web/${fileName}`)
       .filter((assetPath) => !fileExists(resolvePackagedAsset(rootDir, assetPath))),
@@ -165,9 +180,10 @@ export async function runBenchmarkDetection(
   const rootDir = options.rootDir ?? process.cwd();
   const model = options.model ?? DEFAULT_NER_MODEL;
   const regexOnly = Boolean(options.regexOnly);
-  if (!regexOnly) validateBenchmarkModelAssets(rootDir, model);
+  if (!regexOnly) validateBenchmarkModelAssets(rootDir, model, options.dtype ?? 'q8');
 
   installNodeBenchmarkShims(rootDir);
+  if (!options.detector) await configureNodeNerProviderFactory(options.dtype);
   const corpus = parseBenchmarkCorpusJsonl(fs.readFileSync(options.corpusPath, 'utf8'));
   const config = createBenchmarkDetectionConfig({ model, regexOnly });
   const detector = options.detector ?? defaultDetector;
@@ -223,6 +239,43 @@ function parseModelKey(value: string): NerModelKey {
     throw new Error(`Unknown model "${value}". Supported models: ${NER_MODELS.map((item) => item.key).join(', ')}.`);
   }
   return model.key;
+}
+
+function parseDtype(value: string): NerDtype {
+  const dtypes = Object.keys(NER_DTYPE_FILE_SUFFIX) as NerDtype[];
+  const dtype = dtypes.find((candidate) => candidate === value);
+  if (!dtype) {
+    throw new Error(`Unknown dtype "${value}". Supported dtypes: ${dtypes.join(', ')}.`);
+  }
+  return dtype;
+}
+
+/**
+ * Point the detection module at providers that work under Node:
+ * onnxruntime-node has no 'wasm' execution provider, so inference runs on the
+ * native CPU EP, optionally with a forced artifact dtype (e.g., the WebGPU
+ * q4f16 build) to measure quantization quality.
+ */
+async function configureNodeNerProviderFactory(dtype?: NerDtype): Promise<void> {
+  const detection = await import('../offscreen/detection');
+  const { createNerProvider, createTransformersNerProvider } = await import('../offscreen/ner-provider');
+  const providerCache = new Map<string, NerProvider>();
+
+  detection.setNerProviderFactoryForTests((mode, modelKey) => {
+    if (mode !== 'transformers') return createNerProvider(mode, modelKey);
+
+    const cacheKey = `${modelKey}:${dtype ?? 'default'}`;
+    let provider = providerCache.get(cacheKey);
+    if (!provider) {
+      provider = createTransformersNerProvider({
+        modelKey,
+        deviceOverride: 'cpu',
+        ...(dtype ? { dtypeOverride: dtype } : {}),
+      });
+      providerCache.set(cacheKey, provider);
+    }
+    return provider;
+  });
 }
 
 async function detectExample(

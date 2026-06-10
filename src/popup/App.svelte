@@ -80,14 +80,15 @@
           debug={settings.debug}
           clipboardInterceptEnabled={settings.clipboardInterceptEnabled}
           nerModel={settings.nerModel}
-          availableNerModels={settings.availableNerModels}
+          nerModelChoice={settings.nerModelChoice}
+          nerModelChoices={settings.nerModelChoices}
           sensitivityMode={categories.sensitivityMode}
           feedbackCounts={test.feedbackCounts}
           mappingCount={vault.mappingCount}
           setMinConfidence={settings.setMinConfidence}
           setDebug={settings.setDebug}
           setClipboardInterceptEnabled={settings.setClipboardInterceptEnabled}
-          setNerModel={settings.setNerModel}
+          setNerModelChoice={settings.setNerModelChoice}
           openOptions={settings.openOptions}
           openIssueReport={settings.openIssueReport}
           openSecurityReport={settings.openSecurityReport}

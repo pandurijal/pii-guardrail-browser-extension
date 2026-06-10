@@ -236,7 +236,7 @@ describe('offscreen detection flow', () => {
     await detectWithExternalNer(text, config);
 
     expect(providerFactory).toHaveBeenCalledTimes(1);
-    expect(providerFactory).toHaveBeenCalledWith('transformers', 'bardsai');
+    expect(providerFactory).toHaveBeenCalledWith('transformers', 'bardsai', undefined);
     expect(bardsAiProvider.detect).toHaveBeenCalledWith(text);
     expect(getNerStatus(config)).toEqual(
       expect.objectContaining({
@@ -246,6 +246,29 @@ describe('offscreen detection flow', () => {
         modelLabel: 'BardsAI EU multilingual',
       })
     );
+  });
+
+  test('forwards the WebGPU dtype preference from config to the provider factory', async () => {
+    const text = 'John Smith lives in Berlin.';
+    const config = {
+      ner_provider: 'transformers' as const,
+      ner_model: 'bardsai' as const,
+      ner_webgpu_dtype: 'fp16' as const,
+      ner_enabled: true,
+    };
+    const bardsAiProvider: NerProvider = {
+      mode: 'transformers',
+      model: 'bardsai',
+      modelLabel: 'BardsAI EU multilingual',
+      detect: jest.fn().mockResolvedValue([]),
+    };
+    const providerFactory = jest.fn(() => bardsAiProvider);
+
+    setNerProviderFactoryForTests(providerFactory);
+
+    await detectWithExternalNer(text, config);
+
+    expect(providerFactory).toHaveBeenCalledWith('transformers', 'bardsai', 'fp16');
   });
 
   test('does not fall back to deprecated transformer models when the standard model is unavailable', async () => {
@@ -276,7 +299,7 @@ describe('offscreen detection flow', () => {
       expect.any(Error)
     );
     expect(providerFactory).toHaveBeenCalledTimes(1);
-    expect(providerFactory).toHaveBeenCalledWith('transformers', 'bardsai');
+    expect(providerFactory).toHaveBeenCalledWith('transformers', 'bardsai', undefined);
     expect(getNerStatus(config)).toEqual(
       expect.objectContaining({
         mode: 'transformers',

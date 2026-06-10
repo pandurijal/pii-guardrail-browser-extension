@@ -17,8 +17,13 @@ config.json
 tokenizer.json
 tokenizer_config.json
 onnx/model_quantized.onnx
+onnx/model_q4f16.onnx
+onnx/model_q4f16.onnx.data
 onnx/model_fp16.onnx
+onnx/model_fp16.onnx.data
 ```
+
+Both WebGPU artifacts (`model_q4f16` and `model_fp16`) ship in ONNX external-data format: a small graph protobuf plus a `.onnx.data` weights sidecar. Embedded-weight protobufs force ONNX Runtime to copy all weights through the never-shrinking wasm heap during session init, which held multiple GB of RAM until the offscreen document closed.
 
 The generated directory is ignored by Git. Prepared model assets are release artifacts, not source files.
 
@@ -36,7 +41,7 @@ Create a Python environment for conversion tools:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-python -m pip install -U "huggingface_hub[cli]" onnx onnxruntime sympy
+python -m pip install -U "huggingface_hub[cli]" onnx onnxruntime onnx-ir sympy
 ```
 
 Download the needed upstream files into the local source cache:
@@ -64,6 +69,22 @@ npm run prepare:model:bardsai -- \
 ```
 
 The prep script verifies tokenizer metadata, copies tokenizer files, copies or creates `model_quantized.onnx`, copies or creates `model_fp16.onnx`, and writes an asset manifest.
+
+Repackage the embedded fp16 model as ONNX external data (in place, under `generated/models`):
+
+```bash
+npm run convert:model:external-data -- --model bardsai-fp16
+```
+
+Pass `--force` to overwrite an existing `model_fp16.onnx.data`. The script verifies that the `location` recorded inside the protobuf matches the file name the runtime passes to ONNX Runtime (`session_options.externalData` in `src/shared/constants.ts`) and runs the ONNX checker on the result.
+
+Generate the experimental q4f16 WebGPU artifact pair:
+
+```bash
+npm run convert:model:q4f16:bardsai
+```
+
+The script quantizes the fp16 model (or creates an fp16 intermediate from `onnx/model.onnx`) with ONNX Runtime's MatMulNBits 4-bit weight-only quantization. Defaults are `bits=4`, `block_size=32`, symmetric weights, `QOperator` format, `MatMul` ops only; see `--help` for overrides. The output is written directly in external-data format (`model_q4f16.onnx` plus `model_q4f16.onnx.data`) together with a conversion manifest, so no separate external-data repackaging step is needed. Validation asserts that every external tensor records the `model_q4f16.onnx.data` location the runtime passes to ONNX Runtime via `session_options.externalData`, and the manifest records size and SHA-256 for both the graph and the weights sidecar. Pass `--force` to replace an existing output. The Python environment additionally needs `onnx-ir` for the MatMulNBits quantizer import.
 
 If the source directory only has PyTorch or safetensors weights, export ONNX first with Optimum, then pass the exported directory to `prepare:model:bardsai`.
 

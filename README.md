@@ -16,7 +16,7 @@ Privacy Guardrail is a Manifest V3 Chrome extension that detects personally iden
 
 Developed at the [German Research Center for Artificial Intelligence (DFKI)](https://www.dfki.de/), Data Science and its Applications research department.
 
-> **Status — public beta (`0.2.0`).** Detection is assistive: it helps you catch personal data before it leaves your machine, but it will not catch everything and is not a compliance or DLP product. See [Known limitations](#known-limitations).
+> **Status — public beta (`0.3.0`).** Detection is assistive: it helps you catch personal data before it leaves your machine, but it will not catch everything and is not a compliance or DLP product. See [Known limitations](#known-limitations).
 
 ## Contents
 
@@ -51,6 +51,7 @@ For an unpacked developer install, see [`docs/developer/building.md`](docs/devel
 - **Minimum for Local AI:** more than 8 GB browser-reported memory. On 8 GB or less, the extension auto-disables Local AI and runs pattern-only detection. Between 8 GB and 14 GB, Local AI stays on but a slowdown warning may appear.
 - On capable systems (more than 14 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback), Local AI may warm automatically while the user is active on a supported chat page.
 - Without WebGPU, Local AI falls back to CPU/WASM execution (slower but functional).
+- The default Local AI GPU model is a compact 4-bit (q4f16) build that keeps memory around 1 GB while loaded; a full-precision (fp16) model can be selected in the settings at a higher memory cost.
 - Pattern-only detection runs on any supported Chrome system regardless of memory or WebGPU.
 
 These requirements are high because Local AI runs a transformer NER model entirely in the browser. Lowering them is an active roadmap item.

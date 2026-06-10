@@ -14,6 +14,7 @@ export function detectionOptionsFromSettings(
     ner_enabled: provider !== 'off',
     ner_provider: provider,
     ner_model: model,
+    ner_webgpu_dtype: overrides?.ner_webgpu_dtype ?? settings.nerWebGpuDtype,
     ...overrides,
     ...(provider === 'off' ? { ner_enabled: false } : {}),
   };

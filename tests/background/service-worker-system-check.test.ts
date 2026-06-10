@@ -7,6 +7,7 @@ describe('background system compatibility orchestration', () => {
   let store: Record<string, unknown>;
   let installedListener: (() => Promise<void>) | undefined;
   let messageListener: ((message: unknown, sender: unknown, sendResponse: (response: unknown) => void) => boolean) | undefined;
+  let storageChangedListener: ((changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, areaName: string) => void) | undefined;
   let sendMessage: jest.Mock;
   let createDocument: jest.Mock;
   let closeDocument: jest.Mock;
@@ -33,7 +34,7 @@ describe('background system compatibility orchestration', () => {
           set: jest.fn(async (value: Record<string, unknown>) => { store = { ...store, ...value }; }),
           remove: jest.fn(async (key: string) => { delete store[key]; }),
         },
-        onChanged: { addListener: jest.fn() },
+        onChanged: { addListener: jest.fn((listener) => { storageChangedListener = listener; }) },
       },
       runtime: {
         sendMessage,
@@ -427,6 +428,38 @@ describe('background system compatibility orchestration', () => {
     });
     expect(createDocument).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'GET_NER_STATUS' }));
+  });
+
+  test('turning the global toggle off closes the NER offscreen document', async () => {
+    await importWorker();
+    hasDocument.mockResolvedValue(true);
+
+    storageChangedListener?.({
+      [SETTINGS_KEY]: {
+        oldValue: { ...DEFAULT_SETTINGS, nerProvider: 'transformers', enabled: true },
+        newValue: { ...DEFAULT_SETTINGS, nerProvider: 'transformers', enabled: false },
+      },
+    }, 'local');
+    await flushAsyncWork();
+
+    expect(closeDocument).toHaveBeenCalledTimes(1);
+  });
+
+  test('settings writes while already disabled do not tear down the offscreen document', async () => {
+    await importWorker();
+    hasDocument.mockResolvedValue(true);
+    const disabled = { ...DEFAULT_SETTINGS, nerProvider: 'transformers', enabled: false, localAiUnloadTimeoutMs: null };
+    store[SETTINGS_KEY] = disabled;
+
+    storageChangedListener?.({
+      [SETTINGS_KEY]: {
+        oldValue: disabled,
+        newValue: { ...disabled, minConfidence: 0.7 },
+      },
+    }, 'local');
+    await flushAsyncWork();
+
+    expect(closeDocument).not.toHaveBeenCalled();
   });
 
   test('supported-page activity does not warm Local AI when active-page warmup is disabled', async () => {

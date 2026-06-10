@@ -1,6 +1,9 @@
 import {
   DEFAULT_NER_MODEL,
   MAX_TEXT_LENGTH,
+  NER_DTYPE_FILE_SUFFIX,
+  type NerDtype,
+  type NerExternalDataAsset,
   type NerModelDefinition,
   nerModelDefinitionFor,
 } from '../shared/constants';
@@ -10,6 +13,7 @@ import type {
   NerModelKey,
   NerProviderMode,
   NerTimingInfo,
+  NerWebGpuDtype,
   PiiSpan,
 } from '../shared/message-types';
 import { debugLog } from './debug';
@@ -81,7 +85,12 @@ type TransformersModule = {
   pipeline: (
     task: 'token-classification',
     model: string,
-    options?: { dtype?: 'q8' | 'fp16'; local_files_only?: boolean; device?: NerInferenceDevice }
+    options?: {
+      dtype?: NerDtype;
+      local_files_only?: boolean;
+      device?: NerInferenceDevice;
+      session_options?: { externalData?: NerExternalDataAsset[] };
+    }
   ) => Promise<TokenClassificationPipeline>;
 };
 
@@ -92,6 +101,21 @@ interface TransformersProviderOptions {
   assetExists?: (url: string) => Promise<boolean>;
   chunking?: NerChunkingOptions;
   detectWebGpu?: () => Promise<boolean>;
+  /**
+   * Benchmark/test escape hatch: force a specific ONNX artifact instead of
+   * the device-derived one (e.g., run the WebGPU q4f16 artifact on the CPU
+   * EP in Node to measure quantization quality).
+   */
+  dtypeOverride?: NerDtype;
+  /** Benchmark/test escape hatch: force the execution provider. */
+  deviceOverride?: NerInferenceDevice;
+  /**
+   * User preference for the WebGPU artifact (options page). Consulted only
+   * when the resolved device is 'webgpu' — the wasm fallback always runs q8.
+   * Unlike `dtypeOverride` this never forces an artifact onto the wrong
+   * device path.
+   */
+  webGpuDtypePreference?: NerWebGpuDtype;
 }
 
 export interface NerTextChunk {
@@ -365,7 +389,10 @@ const FIXTURE_ENTITIES: readonly FixtureEntity[] = [
 ];
 
 const encoder = new TextEncoder();
-let cachedTransformersProviders = new Map<NerModelKey, NerProvider>();
+// Keyed by model AND WebGPU dtype preference: a provider pins its pipeline
+// (and thus its ONNX artifact) on first detect, so switching the preference
+// must produce a fresh provider instead of reusing a stale pipeline.
+let cachedTransformersProviders = new Map<string, NerProvider>();
 
 function byteLength(text: string): number {
   return encoder.encode(text).length;
@@ -647,18 +674,36 @@ function configureTransformersEnvironment(
   });
 }
 
-function dtypeForDevice(model: NerModelDefinition, device: NerInferenceDevice): 'q8' | 'fp16' {
-  return device === 'webgpu' ? model.webGpuDtype ?? 'q8' : 'q8';
+function dtypeForDevice(
+  model: NerModelDefinition,
+  device: NerInferenceDevice,
+  webGpuDtypePreference?: NerWebGpuDtype
+): NerDtype {
+  if (device !== 'webgpu') return 'q8';
+  return webGpuDtypePreference ?? model.webGpuDtype ?? 'q8';
 }
 
-function requiredAssetsForDevice(
-  model: NerModelDefinition,
-  device: NerInferenceDevice
-): readonly string[] {
-  if (device === 'webgpu' && model.webGpuRequiredAssets) {
-    return model.webGpuRequiredAssets;
+export function requiredAssetsForDtype(model: NerModelDefinition, dtype: NerDtype): readonly string[] {
+  const artifact = model.webGpuArtifacts?.[dtype];
+  if (artifact) {
+    return artifact.requiredAssets;
   }
-  return model.requiredAssets;
+  if (dtype === 'q8') {
+    return model.requiredAssets;
+  }
+  // Dtype without a curated artifact (benchmark override): derive the model
+  // file from the dtype suffix and reuse the tokenizer/config assets. No
+  // external data — these artifacts ship their weights embedded in the
+  // protobuf.
+  const jsonAssets = model.requiredAssets.filter((asset) => asset.endsWith('.json'));
+  return [...jsonAssets, `${model.assetBasePath}/onnx/model${NER_DTYPE_FILE_SUFFIX[dtype]}.onnx`];
+}
+
+function externalDataForDtype(
+  model: NerModelDefinition,
+  dtype: NerDtype
+): readonly NerExternalDataAsset[] | undefined {
+  return model.webGpuArtifacts?.[dtype]?.externalData;
 }
 
 function normalizeLabel(label: string | undefined): string {
@@ -898,13 +943,20 @@ export function createTransformersNerProvider(
 
   async function buildPipeline(
     transformers: TransformersModule,
-    device: NerInferenceDevice
+    device: NerInferenceDevice,
+    dtype: NerDtype
   ): Promise<TokenClassificationPipeline> {
-    const dtype = dtypeForDevice(model, device);
+    // External weight buffers are only passed on the WebGPU path. In Node
+    // (benchmark harness) the model file is loaded by path and ONNX Runtime
+    // resolves the .data file from the same directory itself.
+    const externalData = device === 'webgpu' ? externalDataForDtype(model, dtype) : undefined;
     return transformers.pipeline('token-classification', model.modelId, {
       dtype,
       local_files_only: true,
       device,
+      ...(externalData && externalData.length > 0
+        ? { session_options: { externalData: [...externalData] } }
+        : {}),
     });
   }
 
@@ -913,10 +965,13 @@ export function createTransformersNerProvider(
       const startedAt = performance.now();
       try {
         const webgpuAvailable = await detectWebGpu();
-        const device: NerInferenceDevice = webgpuAvailable ? 'webgpu' : 'wasm';
+        const device: NerInferenceDevice =
+          options.deviceOverride ?? (webgpuAvailable ? 'webgpu' : 'wasm');
+        const dtype =
+          options.dtypeOverride ?? dtypeForDevice(model, device, options.webGpuDtypePreference);
         selectedDevice = device;
         await assertRequiredAssetsAvailable(
-          requiredAssetsForDevice(model, device),
+          requiredAssetsForDtype(model, dtype),
           getExtensionUrl,
           assetExists
         );
@@ -932,11 +987,11 @@ export function createTransformersNerProvider(
         debugLog('[PG:ner] pipeline init: building token-classification pipeline', {
           model: model.modelId,
           device,
-          dtype: dtypeForDevice(model, device),
+          dtype,
           webgpuAvailable,
         });
 
-        const classifier = await buildPipeline(transformers, device);
+        const classifier = await buildPipeline(transformers, device, dtype);
 
         if (device === 'webgpu') {
           // Compile shaders eagerly so the first paste-time inference doesn't
@@ -1079,18 +1134,20 @@ export function createTransformersNerProvider(
 
 export function createNerProvider(
   mode: NerProviderMode,
-  modelKey: NerModelKey = DEFAULT_NER_MODEL
+  modelKey: NerModelKey = DEFAULT_NER_MODEL,
+  webGpuDtypePreference?: NerWebGpuDtype
 ): NerProvider | null {
   if (mode === 'off') return null;
   if (mode === 'fixture') return createFixtureNerProvider();
-  const cached = cachedTransformersProviders.get(modelKey);
+  const cacheKey = `${modelKey}:${webGpuDtypePreference ?? 'default'}`;
+  const cached = cachedTransformersProviders.get(cacheKey);
   if (cached) return cached;
 
-  const provider = createTransformersNerProvider({ modelKey });
-  cachedTransformersProviders.set(modelKey, provider);
+  const provider = createTransformersNerProvider({ modelKey, webGpuDtypePreference });
+  cachedTransformersProviders.set(cacheKey, provider);
   return provider;
 }
 
 export function resetNerProviderCachesForTests(): void {
-  cachedTransformersProviders = new Map<NerModelKey, NerProvider>();
+  cachedTransformersProviders = new Map<string, NerProvider>();
 }

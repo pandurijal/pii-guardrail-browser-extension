@@ -8,7 +8,6 @@ import type {
   LocalAiUnloadTimeoutMs,
   ReplacementModeSetting,
   Settings,
-  NerModelKey,
   NerStatusResponse,
   ReRunSystemCheckResponse,
   SettingsUpdatedMessage,
@@ -27,6 +26,7 @@ import {
   saveIdentityVault,
   updateRecord,
 } from '../shared/identity-vault';
+import { parseNerModelChoice, runtimeNerModelKey } from '../shared/constants';
 import { loadSettings, saveSettings } from '../shared/storage';
 import {
   buildSystemCheckResult,
@@ -51,7 +51,7 @@ export type OptionsModel = {
   setLocalAiDetection: (enabled: boolean) => Promise<void>;
   retryLocalAi: () => Promise<void>;
   rerunSystemCheck: () => Promise<void>;
-  setNerModel: (model: NerModelKey) => Promise<void>;
+  setNerModelChoice: (value: string) => Promise<void>;
   setLocalAiUnloadTimeoutMs: (value: LocalAiUnloadTimeoutMs) => Promise<void>;
   setKeepLocalAiLoadedWhileActive: (enabled: boolean) => Promise<void>;
   setAutoWarmLocalAiOnActiveSupportedPage: (enabled: boolean) => Promise<void>;
@@ -262,7 +262,15 @@ export function createOptionsModel(): OptionsModel {
     setLocalAiDetection,
     retryLocalAi,
     rerunSystemCheck,
-    setNerModel: (model) => saveAndBroadcast({ nerModel: model }),
+    setNerModelChoice: async (value) => {
+      const parsed = parseNerModelChoice(value);
+      const patch: Partial<Settings> = { nerModel: runtimeNerModelKey(parsed.nerModel) };
+      if (parsed.nerWebGpuDtype) patch.nerWebGpuDtype = parsed.nerWebGpuDtype;
+      await saveAndBroadcast(patch);
+      // Match the popup: switching the artifact reloads the model right away
+      // so load progress and failures surface here, not on the next paste.
+      if (currentSettings?.nerProvider !== 'off') await warmUpLocalAi();
+    },
     setLocalAiUnloadTimeoutMs: (value) => saveAndBroadcast({ localAiUnloadTimeoutMs: value }),
     setKeepLocalAiLoadedWhileActive: (enabled) => saveAndBroadcast({ keepLocalAiLoadedWhileActive: enabled }),
     setAutoWarmLocalAiOnActiveSupportedPage: (enabled) => saveAndBroadcast({ autoWarmLocalAiOnActiveSupportedPage: enabled }),

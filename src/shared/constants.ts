@@ -1,4 +1,4 @@
-import type { LocalAiUnloadTimeoutMs, NerModelKey, Settings } from './message-types';
+import type { LocalAiUnloadTimeoutMs, NerModelKey, NerWebGpuDtype, Settings } from './message-types';
 import { defaultGroupsEnabled } from './category-groups';
 
 /** Curated LLM chat URLs where paste interception is active. */
@@ -36,14 +36,49 @@ export const LOCAL_AI_UNLOAD_TIMEOUT_CHOICES: readonly LocalAiUnloadTimeoutMs[] 
   null,
 ];
 
+export type NerDtype = 'q8' | 'fp16' | 'q4f16';
+
+/**
+ * WebGPU artifact choices exposed on the options page. Order matters for the
+ * UI: the low-memory default comes first.
+ */
+export const NER_WEBGPU_DTYPE_CHOICES: readonly NerWebGpuDtype[] = ['q4f16', 'fp16'];
+
+/**
+ * External-data companion file for an ONNX artifact whose weights live outside
+ * the protobuf. `path` must match the `location` recorded inside the .onnx
+ * graph; `data` is the asset path relative to the model directory, fetched at
+ * session creation and handed to ONNX Runtime.
+ */
+export interface NerExternalDataAsset {
+  path: string;
+  data: string;
+}
+
+/** Maps a dtype to the Transformers.js model file suffix it loads. */
+export const NER_DTYPE_FILE_SUFFIX: Readonly<Record<NerDtype, string>> = {
+  q8: '_quantized',
+  fp16: '_fp16',
+  q4f16: '_q4f16',
+};
+
+/** A curated ONNX artifact for one WebGPU dtype choice. */
+export interface NerWebGpuArtifact {
+  requiredAssets: readonly string[];
+  /** External weight files accompanying the artifact, if any. */
+  externalData?: readonly NerExternalDataAsset[];
+}
+
 export interface NerModelDefinition {
   key: NerModelKey;
   label: string;
   modelId: string;
   assetBasePath: string;
   requiredAssets: readonly string[];
-  webGpuDtype?: 'fp16' | 'q8';
-  webGpuRequiredAssets?: readonly string[];
+  /** Default WebGPU dtype when the user expressed no preference. */
+  webGpuDtype?: NerDtype;
+  /** Curated WebGPU artifacts, keyed by dtype. */
+  webGpuArtifacts?: Partial<Readonly<Record<NerDtype, NerWebGpuArtifact>>>;
 }
 
 export const DEFAULT_NER_MODEL: NerModelKey = 'bardsai';
@@ -72,13 +107,47 @@ export const NER_MODELS: readonly NerModelDefinition[] = [
       'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer_config.json',
       'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_quantized.onnx',
     ],
-    webGpuDtype: 'fp16',
-    webGpuRequiredAssets: [
-      'models/ner/bardsai-eu-pii-anonimization-multilang/config.json',
-      'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer.json',
-      'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer_config.json',
-      'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx',
-    ],
+    // Both WebGPU artifacts ship as ONNX external data: an embedded-weights
+    // protobuf forces ORT to copy all weights through the wasm heap several
+    // times during session init (JS fetch buffer, wasm-heap copy,
+    // protobuf-parsed initializers, optimizer copies) and wasm memory never
+    // shrinks — with the 555 MB embedded fp16 build the offscreen document
+    // sat at multiple GB afterwards. With external data the parsed graph is
+    // ~330 KB and the weight buffer is handed to ORT separately and uploaded
+    // to the GPU.
+    webGpuDtype: 'q4f16',
+    webGpuArtifacts: {
+      q4f16: {
+        requiredAssets: [
+          'models/ner/bardsai-eu-pii-anonimization-multilang/config.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer_config.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_q4f16.onnx.data',
+        ],
+        externalData: [
+          {
+            path: 'model_q4f16.onnx.data',
+            data: 'onnx/model_q4f16.onnx.data',
+          },
+        ],
+      },
+      fp16: {
+        requiredAssets: [
+          'models/ner/bardsai-eu-pii-anonimization-multilang/config.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/tokenizer_config.json',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx',
+          'models/ner/bardsai-eu-pii-anonimization-multilang/onnx/model_fp16.onnx.data',
+        ],
+        externalData: [
+          {
+            path: 'model_fp16.onnx.data',
+            data: 'onnx/model_fp16.onnx.data',
+          },
+        ],
+      },
+    },
   },
   {
     key: 'hikmaai',
@@ -92,12 +161,18 @@ export const NER_MODELS: readonly NerModelDefinition[] = [
       'models/ner/hikmaai-distilbert-pii/onnx/model_quantized.onnx',
     ],
     webGpuDtype: 'fp16',
-    webGpuRequiredAssets: [
-      'models/ner/hikmaai-distilbert-pii/config.json',
-      'models/ner/hikmaai-distilbert-pii/tokenizer.json',
-      'models/ner/hikmaai-distilbert-pii/tokenizer_config.json',
-      'models/ner/hikmaai-distilbert-pii/onnx/model_fp16.onnx',
-    ],
+    // Inactive model; its fp16 artifact still ships weights embedded in the
+    // protobuf. Repackage as external data before reactivating.
+    webGpuArtifacts: {
+      fp16: {
+        requiredAssets: [
+          'models/ner/hikmaai-distilbert-pii/config.json',
+          'models/ner/hikmaai-distilbert-pii/tokenizer.json',
+          'models/ner/hikmaai-distilbert-pii/tokenizer_config.json',
+          'models/ner/hikmaai-distilbert-pii/onnx/model_fp16.onnx',
+        ],
+      },
+    },
   },
 ] as const;
 
@@ -113,6 +188,67 @@ export function runtimeNerModelKey(key: NerModelKey | undefined): NerModelKey {
 
 export function nerModelDefinitionFor(key: NerModelKey): NerModelDefinition {
   return NER_MODELS.find((model) => model.key === key) ?? NER_MODELS[0];
+}
+
+/** One entry in the merged model + GPU precision picker. */
+export interface NerModelChoice {
+  /** Composite select value: `key` or `key@dtype`. */
+  value: string;
+  key: NerModelKey;
+  /** WebGPU dtype this entry selects; null when the model offers no choice. */
+  dtype: NerWebGpuDtype | null;
+  label: string;
+}
+
+function webGpuDtypeChoicesFor(model: NerModelDefinition): readonly NerWebGpuDtype[] {
+  return NER_WEBGPU_DTYPE_CHOICES.filter((dtype) => model.webGpuArtifacts?.[dtype]);
+}
+
+/**
+ * Flattens models into picker entries shared by the popup and the options
+ * page. A model with multiple curated WebGPU artifacts appears once per
+ * dtype, labelled "Label (dtype)".
+ */
+export function nerModelChoices(
+  models: readonly NerModelDefinition[] = ACTIVE_NER_MODELS,
+): NerModelChoice[] {
+  return models.flatMap((model): NerModelChoice[] => {
+    const dtypes = webGpuDtypeChoicesFor(model);
+    if (dtypes.length < 2) {
+      return [{ value: model.key, key: model.key, dtype: null, label: model.label }];
+    }
+    return dtypes.map((dtype) => ({
+      value: `${model.key}@${dtype}`,
+      key: model.key,
+      dtype,
+      label: `${model.label} (${dtype})`,
+    }));
+  });
+}
+
+/** Select value matching the persisted model + dtype settings. */
+export function nerModelChoiceValue(
+  key: NerModelKey,
+  dtype: NerWebGpuDtype | undefined,
+  models: readonly NerModelDefinition[] = ACTIVE_NER_MODELS,
+): string {
+  const choices = nerModelChoices(models);
+  const wanted = dtype ?? DEFAULT_SETTINGS.nerWebGpuDtype;
+  const match = choices.find(
+    (choice) => choice.key === key && (choice.dtype === null || choice.dtype === wanted),
+  );
+  return (match ?? choices.find((choice) => choice.key === key) ?? choices[0]).value;
+}
+
+/** Inverse of {@link nerModelChoiceValue}: settings patch for a select value. */
+export function parseNerModelChoice(
+  value: string,
+): { nerModel: NerModelKey; nerWebGpuDtype?: NerWebGpuDtype } {
+  const [key, dtype] = value.split('@');
+  const nerModel = key as NerModelKey;
+  return dtype && (NER_WEBGPU_DTYPE_CHOICES as readonly string[]).includes(dtype)
+    ? { nerModel, nerWebGpuDtype: dtype as NerWebGpuDtype }
+    : { nerModel };
 }
 
 /** Default extension settings. */
@@ -133,6 +269,10 @@ export const DEFAULT_SETTINGS: Settings = {
   blocklist: [],
   nerProvider: 'transformers',
   nerModel: DEFAULT_NER_MODEL,
+  // Low-memory default: the q4f16 external-data artifact keeps the offscreen
+  // document around 1 GB while loaded. Users who accept the multi-GB RAM cost
+  // of the fp16 embedded-weight artifact opt in from the options page.
+  nerWebGpuDtype: 'q4f16',
   groupsEnabled: defaultGroupsEnabled(),
   // The vault is enabled by default; consistency across sessions is the
   // primary value-add and the storage cost is negligible.

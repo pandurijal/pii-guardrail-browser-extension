@@ -64,7 +64,7 @@
 			setLocalAiDetection={model.setLocalAiDetection}
 			retryLocalAi={model.retryLocalAi}
 			rerunSystemCheck={model.rerunSystemCheck}
-			setNerModel={model.setNerModel}
+			setNerModelChoice={model.setNerModelChoice}
 			setLocalAiUnloadTimeoutMs={model.setLocalAiUnloadTimeoutMs}
 			setKeepLocalAiLoadedWhileActive={model.setKeepLocalAiLoadedWhileActive}
 			setAutoWarmLocalAiOnActiveSupportedPage={model.setAutoWarmLocalAiOnActiveSupportedPage}

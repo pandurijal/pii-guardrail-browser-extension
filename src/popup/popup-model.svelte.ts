@@ -18,7 +18,14 @@ import type {
   SystemCompatibilityStatus,
   SystemCompatibilityStatusResponse,
 } from '../shared/message-types';
-import { ACTIVE_NER_MODELS, runtimeNerModelKey } from '../shared/constants';
+import {
+  ACTIVE_NER_MODELS,
+  nerModelChoices,
+  nerModelChoiceValue,
+  parseNerModelChoice,
+  runtimeNerModelKey,
+  type NerModelChoice,
+} from '../shared/constants';
 import { GROUP_NAMES, GROUP_DEFAULT_ON, filterByGroup } from '../shared/category-groups';
 import { applyAllowlistToText } from '../shared/feedback';
 import { loadIdentityVault } from '../shared/identity-vault';
@@ -88,7 +95,8 @@ export type SettingsModel = {
   debug: Writable<boolean>;
   clipboardInterceptEnabled: Writable<boolean>;
   nerModel: Writable<NerModelKey>;
-  availableNerModels: typeof ACTIVE_NER_MODELS;
+  nerModelChoice: Writable<string>;
+  nerModelChoices: readonly NerModelChoice[];
   openOptions: () => void;
   openIssueReport: () => void;
   openSecurityReport: () => void;
@@ -98,7 +106,7 @@ export type SettingsModel = {
   setMinConfidence: (value: number) => Promise<void>;
   setDebug: (enabled: boolean) => Promise<void>;
   setClipboardInterceptEnabled: (enabled: boolean) => Promise<void>;
-  setNerModel: (model: NerModelKey) => Promise<void>;
+  setNerModelChoice: (value: string) => Promise<void>;
 };
 export type AppModels = {
   navigation: NavigationModel;
@@ -197,6 +205,7 @@ export function createAppModels(): AppModels {
   const debug = writable(false);
   const clipboardInterceptEnabled = writable(true);
   const nerModel = writable<NerModelKey>('bardsai');
+  const nerModelChoice = writable<string>(nerModelChoiceValue('bardsai', undefined));
 
   function applySettings(settings: Settings): void {
     currentSettings = settings;
@@ -211,6 +220,7 @@ export function createAppModels(): AppModels {
     clipboardInterceptEnabled.set(settings.clipboardInterceptEnabled);
     const normalizedModel = runtimeNerModelKey(settings.nerModel);
     nerModel.set(normalizedModel);
+    nerModelChoice.set(nerModelChoiceValue(normalizedModel, settings.nerWebGpuDtype));
     modelLabel.set(modelLabelFor(normalizedModel));
   }
 
@@ -428,7 +438,8 @@ export function createAppModels(): AppModels {
       debug,
       clipboardInterceptEnabled,
       nerModel,
-      availableNerModels: ACTIVE_NER_MODELS,
+      nerModelChoice,
+      nerModelChoices: nerModelChoices(),
       openOptions: () => chrome.runtime.openOptionsPage(),
       openIssueReport: () => openExternalUrl(PUBLIC_PROJECT_LINKS.newIssue),
       openSecurityReport: () => openExternalUrl(PUBLIC_PROJECT_LINKS.security),
@@ -438,9 +449,11 @@ export function createAppModels(): AppModels {
       setMinConfidence: (value) => saveAndBroadcast({ minConfidence: value }),
       setDebug: async (value) => { await saveSettings({ debug: value }); debug.set(value); },
       setClipboardInterceptEnabled: (value) => saveAndBroadcast({ clipboardInterceptEnabled: value }),
-      setNerModel: async (model) => {
-        const normalized = runtimeNerModelKey(model);
-        await saveAndBroadcast({ nerModel: normalized });
+      setNerModelChoice: async (value) => {
+        const parsed = parseNerModelChoice(value);
+        const patch: Partial<Settings> = { nerModel: runtimeNerModelKey(parsed.nerModel) };
+        if (parsed.nerWebGpuDtype) patch.nerWebGpuDtype = parsed.nerWebGpuDtype;
+        await saveAndBroadcast(patch);
         const config = currentDetectionConfig(currentSettings, nerModel);
         nerStatus.set(status('Loading...', 'muted'));
         cpuFallback.set(false);

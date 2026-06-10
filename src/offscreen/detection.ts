@@ -3,6 +3,7 @@ import type {
   NerProviderMode,
   NerStatus,
   NerStatusChangedBroadcast,
+  NerWebGpuDtype,
   PiiSpan,
 } from '../shared/message-types';
 import { ACTIVE_NER_MODELS, DEFAULT_NER_MODEL, nerModelDefinitionFor, runtimeNerModelKey } from '../shared/constants';
@@ -10,7 +11,11 @@ import { debugLog } from './debug';
 import { detectPii } from './wasm-bridge';
 import { createNerProvider, resetNerProviderCachesForTests, type NerProvider } from './ner-provider';
 
-type NerProviderFactory = (mode: NerProviderMode, model: NonNullable<DetectionOptions['ner_model']>) => NerProvider | null;
+type NerProviderFactory = (
+  mode: NerProviderMode,
+  model: NonNullable<DetectionOptions['ner_model']>,
+  webGpuDtype?: NerWebGpuDtype
+) => NerProvider | null;
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return;
@@ -150,7 +155,7 @@ async function externalNerSpansFor(
   for (const candidateModel of modelsToTry) {
     throwIfAborted(signal);
     const candidateDefinition = nerModelDefinitionFor(candidateModel);
-    const provider = providerFactory(mode, candidateModel);
+    const provider = providerFactory(mode, candidateModel, config?.ner_webgpu_dtype);
     if (!provider) {
       console.warn('[PG:offscreen] no provider returned for mode/model', {
         mode,
