@@ -87,6 +87,16 @@ describe('PageStatusChip', () => {
     expect(getRoot(chip)?.getAttribute('data-reason')).toBe('model-failed');
   });
 
+  test('renders an explicit message override for diagnostic detail', () => {
+    const chip = new PageStatusChip('dark');
+    chip.update('model-failed', {
+      title: 'Local AI model failed to load',
+      detail: 'WASM init failed. Pattern detection remains active.',
+    });
+
+    expect(getRoot(chip)?.textContent).toMatch(/WASM init failed/i);
+  });
+
   test('changing reason re-renders without unmounting twice', () => {
     const chip = new PageStatusChip('dark');
     chip.update('pattern-only');

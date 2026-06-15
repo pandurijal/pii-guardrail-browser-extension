@@ -7,7 +7,7 @@
  */
 
 import type { ThemeSetting } from '../../shared/message-types';
-import { chipReasonMessage, type ChipReason } from '../../shared/page-status-chip-reason';
+import { chipReasonMessage, type ChipMessage, type ChipReason } from '../../shared/page-status-chip-reason';
 
 const CHIP_STYLES = `
   :host { all: initial; }
@@ -98,6 +98,7 @@ export class PageStatusChip {
   private shadow: ShadowRoot;
   private mounted = false;
   private currentReason: ChipReason | null = null;
+  private currentMessage: ChipMessage | null = null;
   private minimized: boolean;
   private theme: ThemeSetting;
   private readonly callbacks: PageStatusChipCallbacks;
@@ -117,9 +118,14 @@ export class PageStatusChip {
   }
 
   /** Update the displayed reason; pass null to remove the chip. */
-  update(reason: ChipReason | null): void {
-    if (reason === this.currentReason && (reason === null) === !this.mounted) return;
+  update(reason: ChipReason | null, message?: ChipMessage): void {
+    if (
+      reason === this.currentReason
+      && (reason === null) === !this.mounted
+      && sameMessage(message ?? null, this.currentMessage)
+    ) return;
     this.currentReason = reason;
+    this.currentMessage = message ?? null;
 
     if (reason === null) {
       this.dispose();
@@ -161,7 +167,7 @@ export class PageStatusChip {
 
   private render(): void {
     if (!this.currentReason) return;
-    const { title, detail } = chipReasonMessage(this.currentReason);
+    const { title, detail } = this.currentMessage ?? chipReasonMessage(this.currentReason);
     const minimizedAttr = this.minimized ? 'true' : 'false';
     const toggleLabel = this.minimized ? 'Expand status' : 'Minimize status';
     const toggleGlyph = this.minimized ? '+' : '−';
@@ -185,6 +191,12 @@ export class PageStatusChip {
       root?.addEventListener('click', () => this.setMinimized(false));
     }
   }
+}
+
+function sameMessage(a: ChipMessage | null, b: ChipMessage | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.title === b.title && a.detail === b.detail;
 }
 
 function readSessionMinimized(): boolean {

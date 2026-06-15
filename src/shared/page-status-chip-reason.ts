@@ -53,6 +53,20 @@ export interface ChipMessage {
   detail: string;
 }
 
+export function chipReasonMessageForStatus(
+  reason: ChipReason,
+  status?: SystemCompatibilityStatus | null,
+): ChipMessage {
+  const message = chipReasonMessage(reason);
+  const loadFailureMessage = status?.loadFailure?.message?.trim();
+  if (reason !== 'model-failed' || !loadFailureMessage) return message;
+
+  return {
+    ...message,
+    detail: `${loadFailureMessage} Pattern detection remains active. You can retry from Privacy Guardrail settings.`,
+  };
+}
+
 export function chipReasonMessage(reason: ChipReason): ChipMessage {
   switch (reason) {
     case 'pattern-only':

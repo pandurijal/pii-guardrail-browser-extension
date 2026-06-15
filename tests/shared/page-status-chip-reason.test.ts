@@ -1,5 +1,6 @@
 import {
   chipReasonMessage,
+  chipReasonMessageForStatus,
   deriveChipReason,
   type ChipReason,
 } from '../../src/shared/page-status-chip-reason';
@@ -137,5 +138,18 @@ describe('chipReasonMessage', () => {
     expect(message.detail).toMatch(/names/i);
     expect(message.detail).toMatch(/organizations/i);
     expect(message.detail).toMatch(/locations/i);
+  });
+
+  test('model-failed detail includes the stored load failure reason when present', () => {
+    const message = chipReasonMessageForStatus(
+      'model-failed',
+      status({
+        localAiState: 'off-load-failure',
+        loadFailure: { message: 'WASM init failed', at: 1 },
+      }),
+    );
+
+    expect(message.detail).toContain('WASM init failed');
+    expect(message.detail).toMatch(/Pattern detection remains active/i);
   });
 });

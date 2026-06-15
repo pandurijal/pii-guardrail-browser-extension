@@ -23,7 +23,7 @@ import { ScanningIndicator } from '../ui/scanning-indicator/scanning-indicator';
 import { CancelDecisionDialog } from '../ui/cancel-decision-dialog/cancel-decision-dialog';
 import { CriticalLocalAiModal } from '../ui/critical-local-ai-modal/critical-local-ai-modal';
 import { PageStatusChip } from '../ui/page-status-chip/page-status-chip';
-import { deriveChipReason } from '../shared/page-status-chip-reason';
+import { chipReasonMessageForStatus, deriveChipReason } from '../shared/page-status-chip-reason';
 import { SYSTEM_CHECK_STORAGE_KEY } from '../shared/system-check-storage';
 import { attachDeAnonBanner } from '../ui/banner/de-anon-banner';
 import { anonymize, anonymizeWithVault } from '../shared/anonymizer';
@@ -170,7 +170,7 @@ async function maybeShowCriticalLocalAiModal(): Promise<void> {
 function refreshPageStatusChip(): void {
   if (!pageStatusChip) return;
   const reason = deriveChipReason({ status: lastSystemStatus, nerStatus: lastNerStatus });
-  pageStatusChip.update(reason);
+  pageStatusChip.update(reason, reason ? chipReasonMessageForStatus(reason, lastSystemStatus) : undefined);
 }
 
 async function probeNerStatusIfSafe(): Promise<void> {
