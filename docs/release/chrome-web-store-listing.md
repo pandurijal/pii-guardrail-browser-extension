@@ -177,6 +177,8 @@ Variant selection rules:
 - [ ] `manifest.json` version equals the released `0.2.0` artifact (`npm run version:check -- 0.2.0 --require-tag`).
 - [ ] Uploaded ZIP is the exact artifact built by `npm run package:release` and matches the published SHA-256 checksum.
 - [ ] Listing only references the four supported sites and does not advertise generic or custom site support.
+- [ ] Listing uses "review", "replace", and "restore"; it avoids legal de-identification
+      terminology unless that legal meaning is intended.
 - [ ] Permission justifications match the audited manifest in `docs/release/chrome-permissions.md`.
 - [ ] Privacy policy and Support URLs resolve on the public GitHub repo.
 - [ ] Screenshots are from the synthetic set only (slice 14).

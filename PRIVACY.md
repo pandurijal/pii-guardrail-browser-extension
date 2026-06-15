@@ -52,8 +52,6 @@ The extension processes data on your device for the following purposes:
 
 ## 4. Legal Basis
 
-> **To be confirmed by DFKI legal.** The following is a draft assessment.
-
 - **Art. 6(1)(b) GDPR** (performance of a function you request): the extension processes the
   text you provide in order to carry out the detection, replacement, and restoration that you
   explicitly initiate.
@@ -66,8 +64,14 @@ processed content, DFKI does not act as a controller over the substance of the t
 
 ## 5. Recipients & Non-Transmission
 
-DFKI **receives, stores, and evaluates nothing** from the extension. The extension does **not**
-transmit data to DFKI or to any DFKI/own servers. There is no telemetry back-channel.
+DFKI does **not** receive, store, or evaluate user content from the extension. In particular,
+the extension does **not** transmit user content, prompts, responses, detection results,
+placeholder mappings, identity-vault data, local feedback records/logs, or model input to DFKI
+or to DFKI-operated/project-operated servers. There is no telemetry back-channel.
+
+Voluntary reports you submit outside the extension, for example through GitHub Issues or by
+email to `pii@dfki.de`, are separate from extension operation and contain only what you choose
+to send.
 
 Privacy Guardrail does **not** include:
 
@@ -124,6 +128,13 @@ you use:
 
 **Where it is stored:** locally in your browser profile, on your device. It is **not** collected
 by DFKI.
+
+**Local-storage necessity (§ 25 TDDDG):** the extension uses `chrome.storage.local` only to
+provide functions you explicitly request, including applying your settings, keeping
+placeholder/value mappings for restoration, maintaining stable local replacement identities,
+storing local correction records, and showing the local system-compatibility result. This local
+storage is necessary for those requested extension functions. It is not used for tracking,
+analytics, telemetry, advertising, or remote profiling.
 
 **Retention:** data remains until **you** delete it. There is no automatic upload and no
 server-side copy. The feedback log is additionally capped at the most recent 1000 entries.
