@@ -13,6 +13,7 @@ import { ClaudeAdapter } from './site-adapters/claude-adapter';
 import { GeminiAdapter } from './site-adapters/gemini-adapter';
 import { GenericAdapter } from './site-adapters/generic-adapter';
 import { PasteInterceptor } from './paste-interceptor';
+import { sendRuntimeMessageBestEffort } from './runtime-messaging';
 import { shouldShowCriticalLocalAiModal } from './critical-local-ai-modal-status';
 import { ResponseObserver } from './response-observer';
 import { ClipboardInterceptor } from './clipboard-interceptor';
@@ -101,10 +102,10 @@ function reportSupportedPageActivity(visible: boolean, force = false): void {
   const now = Date.now();
   if (visible && !force && now - lastActivityHeartbeatAt < LOCAL_AI_ACTIVITY_HEARTBEAT_MS) return;
   lastActivityHeartbeatAt = now;
-  chrome.runtime.sendMessage({
+  sendRuntimeMessageBestEffort({
     type: 'SUPPORTED_PAGE_ACTIVITY',
     payload: { visible },
-  }).catch(() => undefined);
+  });
 }
 
 function reportUserActivity(): void {
@@ -391,7 +392,7 @@ function showReviewOverlay(
 
       onEditDetails: (text: string) => {
         const url = chrome.runtime.getURL(`options/options.html?allowlist=${encodeURIComponent(text)}`);
-        chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS_PAGE', payload: { url } });
+        sendRuntimeMessageBestEffort({ type: 'OPEN_OPTIONS_PAGE', payload: { url } });
       },
     },
     (span: PiiSpan) => resolveThreshold(settings, span.entity_type),

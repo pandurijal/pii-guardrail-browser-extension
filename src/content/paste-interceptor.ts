@@ -9,6 +9,7 @@ import type {
 import { MIN_PASTE_LENGTH } from '../shared/constants';
 import { detectionOptionsFromSettings } from '../shared/detection-config';
 import { loadSettings } from '../shared/storage';
+import { sendRuntimeMessageBestEffort } from './runtime-messaging';
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -88,9 +89,7 @@ export class PasteInterceptor {
       type: 'CANCEL_DETECTION',
       payload: { requestId },
     };
-    chrome.runtime.sendMessage(request).catch(() => {
-      // Best effort: a finished detection may already have closed the route.
-    });
+    sendRuntimeMessageBestEffort(request);
 
     this.callbacks.onCanceled(true);
     void this.resolveExplicitCancellation(text);
