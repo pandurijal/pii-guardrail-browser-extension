@@ -2,6 +2,7 @@ import {
   applyNerThresholdPolicy,
   chunkTextForNer,
   createFixtureNerProvider,
+  defaultDetectWebGpu,
   createNerProvider,
   createTransformersNerProvider,
   mapAi4PrivacyLabelToEntityType,
@@ -14,6 +15,7 @@ import {
   resetNerProviderCachesForTests,
   transformerOutputToSpans,
 } from '../../src/offscreen/ner-provider';
+import { SYSTEM_CHECK_STORAGE_KEY, buildSystemCheckResult } from '../../src/shared/system-check-storage';
 
 describe('fixture NER provider', () => {
   test('returns deterministic NER candidate spans with byte offsets', async () => {
@@ -66,6 +68,39 @@ describe('transformers NER provider', () => {
 
   afterEach(() => {
     resetNerProviderCachesForTests();
+    delete (globalThis as any).chrome;
+  });
+
+  test('uses stored WebGPU compatibility without probing requestAdapter', async () => {
+    const requestAdapter = jest.fn().mockRejectedValue(new Error('Failed to create WebGPU Context Provider'));
+    const originalNavigator = globalThis.navigator;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { gpu: { requestAdapter } },
+    });
+    (globalThis as any).chrome = {
+      storage: {
+        local: {
+          get: jest.fn().mockResolvedValue({
+            [SYSTEM_CHECK_STORAGE_KEY]: buildSystemCheckResult(
+              { browserMemoryGb: 32, webGpu: 'available' },
+              123
+            ),
+          }),
+        },
+      },
+    };
+
+    try {
+      await expect(defaultDetectWebGpu()).resolves.toBe(true);
+
+      expect(requestAdapter).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', {
+        configurable: true,
+        value: originalNavigator,
+      });
+    }
   });
 
   test('configures Transformers.js for local-only extension assets and q4f16 WASM fallback', async () => {

@@ -16,6 +16,7 @@ import type {
   NerWebGpuDtype,
   PiiSpan,
 } from '../shared/message-types';
+import { loadSystemCheckResult } from '../shared/system-check-storage';
 import { debugLog } from './debug';
 
 export interface NerProvider {
@@ -576,15 +577,10 @@ async function defaultLoadTransformers(): Promise<TransformersModule> {
   ) as Promise<TransformersModule>;
 }
 
-async function defaultDetectWebGpu(): Promise<boolean> {
-  // Service workers don't expose navigator.gpu; offscreen documents do. Guard
-  // both for safety so this helper is reusable across contexts.
-  const nav = typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { gpu?: unknown });
-  const gpu = nav?.gpu as { requestAdapter?: () => Promise<unknown> } | undefined;
-  if (!gpu || typeof gpu.requestAdapter !== 'function') return false;
+export async function defaultDetectWebGpu(): Promise<boolean> {
   try {
-    const adapter = await gpu.requestAdapter();
-    return Boolean(adapter);
+    const systemCheck = await loadSystemCheckResult();
+    return systemCheck?.webGpu === 'available';
   } catch {
     return false;
   }
