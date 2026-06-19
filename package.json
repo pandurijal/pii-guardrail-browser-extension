@@ -33,7 +33,8 @@
     "benchmark:openpii:download": "node scripts/download-openpii-dataset.js",
     "benchmark:openpii:build": "node scripts/build-openpii-corpus.js",
     "lint": "eslint src/ --ext .ts",
-    "clean": "rm -rf dist crate/pkg crate/target"
+    "clean": "rm -rf dist crate/pkg crate/target",
+    "launch-chrome-without-webgpu-mac": "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --user-data-dir=/private/tmp/pg-cpu-chrome --disable-features=WebGPU  --disable-gpu"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
