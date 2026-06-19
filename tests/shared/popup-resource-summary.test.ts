@@ -14,7 +14,7 @@ const baseSettings: Settings = {
 
 const baseStatus: SystemCompatibilityStatus = {
   schemaVersion: 1,
-  policyVersion: 1,
+  policyVersion: 2,
   checkedAt: 0,
   browserMemoryGb: 32,
   webGpu: 'available',
@@ -37,9 +37,9 @@ describe('deriveResourceSummary', () => {
   });
 
   test('uses browser-reported memory wording for warning tier', () => {
-    const result = deriveResourceSummary(baseSettings, { ...baseStatus, tier: 'warning', browserMemoryGb: 12 });
+    const result = deriveResourceSummary(baseSettings, { ...baseStatus, tier: 'warning', browserMemoryGb: 4 });
     expect(result?.tone).toBe('warning');
-    expect(result?.detail).toMatch(/browser-reported memory is 12 GB/i);
+    expect(result?.detail).toMatch(/browser-reported memory is 4 GB/i);
   });
 
   test('flags unknown memory as warning', () => {
@@ -52,11 +52,11 @@ describe('deriveResourceSummary', () => {
     const result = deriveResourceSummary(baseSettings, {
       ...baseStatus,
       tier: 'critical',
-      browserMemoryGb: 8,
+      browserMemoryGb: 2,
       localAiState: 'off-low-memory-auto',
     });
     expect(result?.tone).toBe('critical');
-    expect(result?.detail).toMatch(/8 GB/);
+    expect(result?.detail).toMatch(/2 GB/);
     expect(result?.detail).toMatch(/critical/i);
   });
 
@@ -64,7 +64,7 @@ describe('deriveResourceSummary', () => {
     const result = deriveResourceSummary(baseSettings, {
       ...baseStatus,
       tier: 'critical',
-      browserMemoryGb: 8,
+      browserMemoryGb: 2,
       localAiState: 'enabled-low-memory-override',
     });
     expect(result?.tone).toBe('critical');

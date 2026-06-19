@@ -37,7 +37,7 @@ function compatibility(
 ): SystemCompatibilityStatus {
   return {
     schemaVersion: 1,
-    policyVersion: 1,
+    policyVersion: 2,
     checkedAt: 1700000000000,
     webGpu: 'available',
     tier: 'ok',
@@ -82,7 +82,7 @@ describe('Local AI release readiness: pattern detection stays active', () => {
       const status = compatibility({
         localAiState: state,
         tier: state === 'off-low-memory-auto' || state === 'enabled-low-memory-override' ? 'critical' : 'ok',
-        browserMemoryGb: 6,
+        browserMemoryGb: state === 'off-low-memory-auto' || state === 'enabled-low-memory-override' ? 2 : 8,
       });
       const provider = state === 'off-user-choice' ? 'off' : 'transformers';
       const summary = deriveResourceSummary(settings({ nerProvider: provider }), status);
@@ -123,7 +123,7 @@ describe('Local AI release readiness: degraded states are visible', () => {
       localAiState: 'off-low-memory-auto',
       tier: 'critical',
       criticalModal: 'dismissed',
-      browserMemoryGb: 6,
+      browserMemoryGb: 2,
     });
     expect(deriveChipReason({ status })).toBe('low-memory-protection');
     const summary = deriveResourceSummary(settings({ nerProvider: 'off' }), status);
@@ -168,7 +168,11 @@ describe('Local AI release readiness: no model load when Local AI is off or degr
     expect(
       shouldAutoWarmLocalAi(
         settings({ nerProvider: state === 'enabled-low-memory-override' ? 'transformers' : 'off' }),
-        compatibility({ localAiState: state, tier: state === 'off-low-memory-auto' ? 'critical' : 'ok' }),
+        compatibility({
+          localAiState: state,
+          tier: state === 'off-low-memory-auto' ? 'critical' : 'ok',
+          browserMemoryGb: state === 'off-low-memory-auto' ? 2 : 8,
+        }),
       ),
     ).toBe(false);
   });

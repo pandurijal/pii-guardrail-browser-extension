@@ -9,7 +9,7 @@ import type { NerStatus, SystemCompatibilityStatus } from '../../src/shared/mess
 function status(overrides: Partial<SystemCompatibilityStatus> = {}): SystemCompatibilityStatus {
   return {
     schemaVersion: 1,
-    policyVersion: 1,
+    policyVersion: 2,
     checkedAt: 1,
     browserMemoryGb: 16,
     webGpu: 'available',
@@ -44,7 +44,7 @@ describe('deriveChipReason', () => {
   test('returns low-memory-protection only after the critical modal is dismissed', () => {
     const auto = status({
       tier: 'critical',
-      browserMemoryGb: 8,
+      browserMemoryGb: 2,
       recommendation: 'auto-disable-local-ai',
       localAiState: 'off-low-memory-auto',
     });
@@ -59,7 +59,7 @@ describe('deriveChipReason', () => {
       deriveChipReason({
         status: status({
           tier: 'critical',
-          browserMemoryGb: 8,
+          browserMemoryGb: 2,
           localAiState: 'enabled-low-memory-override',
           criticalModal: 'dismissed',
         }),
@@ -76,7 +76,7 @@ describe('deriveChipReason', () => {
   test('returns low-memory-warning on warning tier with Local AI enabled', () => {
     expect(
       deriveChipReason({
-        status: status({ tier: 'warning', browserMemoryGb: 12, recommendation: 'warn' }),
+        status: status({ tier: 'warning', browserMemoryGb: 4, recommendation: 'warn' }),
       }),
     ).toBe('low-memory-warning');
   });

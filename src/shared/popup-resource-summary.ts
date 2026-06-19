@@ -66,7 +66,7 @@ export function deriveResourceSummary(
     return {
       tone: 'warning',
       title: 'Local AI may be resource-intensive',
-      detail: `Browser-reported memory is ${memoryWording(status)} (between 8 GB and 14 GB). Watch for slowdowns while Local AI is on.`,
+      detail: `Browser-reported memory is ${memoryWording(status)} (between 2 GB and 4 GB). Watch for slowdowns while Local AI is on.`,
     };
   }
 

@@ -33,7 +33,7 @@ Pattern-based detection can still run when Local AI is off or unavailable, but c
 
 ## Local AI Loads Or Unloads Unexpectedly
 
-- On capable systems, Local AI can warm automatically while you are active on a supported chat page. Capable means more than 14 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback.
+- On capable systems, Local AI can warm automatically while you are active on a supported chat page. Capable means more than 4 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback.
 - Background tabs do not keep Local AI loaded.
 - Turning Local AI off unloads the Local AI runtime; pattern detection remains active.
 - By default, Local AI unloads after 10 minutes of inactivity. You can change the timeout or disable active-page warmup in options.

@@ -85,7 +85,13 @@ export function normalizeSystemCheckResult(raw: unknown): SystemCheckResult | nu
   if (!raw || typeof raw !== 'object') return null;
   const candidate = raw as Partial<SystemCheckResult>;
   if (candidate.schemaVersion !== SYSTEM_CHECK_SCHEMA_VERSION) return null;
-  if (candidate.policyVersion !== SYSTEM_COMPATIBILITY_POLICY_VERSION) return null;
+  if (
+    typeof candidate.policyVersion !== 'number'
+    || candidate.policyVersion < 1
+    || candidate.policyVersion > SYSTEM_COMPATIBILITY_POLICY_VERSION
+  ) {
+    return null;
+  }
   if (!isWebGpuAvailability(candidate.webGpu)) return null;
 
   const rebuilt = buildSystemCheckResult(

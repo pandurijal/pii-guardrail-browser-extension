@@ -22,19 +22,36 @@ describe('system-check storage', () => {
   test('normalizes missing and older schema state to null', () => {
     expect(normalizeSystemCheckResult(undefined)).toBeNull();
     expect(normalizeSystemCheckResult({ schemaVersion: 0 })).toBeNull();
+    expect(normalizeSystemCheckResult({ ...buildSystemCheckResult({ webGpu: 'available' }), policyVersion: 0 })).toBeNull();
+  });
+
+  test('normalizes older policy versions through the current memory thresholds', () => {
+    const result = normalizeSystemCheckResult({
+      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      policyVersion: 1,
+      tier: 'critical',
+      recommendation: 'auto-disable-local-ai',
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      policyVersion: 2,
+      browserMemoryGb: 8,
+      tier: 'ok',
+      recommendation: 'none',
+    }));
   });
 
   test('builds and persists a versioned compatibility result separately from settings', async () => {
-    const result = buildSystemCheckResult({ browserMemoryGb: 12, webGpu: 'available' }, 123);
+    const result = buildSystemCheckResult({ browserMemoryGb: 4, webGpu: 'available' }, 123);
 
     await saveSystemCheckResult(result);
 
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
       [SYSTEM_CHECK_STORAGE_KEY]: expect.objectContaining({
         schemaVersion: 1,
-        policyVersion: 1,
+        policyVersion: 2,
         checkedAt: 123,
-        browserMemoryGb: 12,
+        browserMemoryGb: 4,
         tier: 'warning',
       }),
     });
@@ -48,7 +65,7 @@ describe('system-check storage', () => {
   });
 
   test('records modal dismissal, enable, override, auto-disable, user-off, and load failure state', async () => {
-    const base = buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'unknown' }, 100);
+    const base = buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'unknown' }, 100);
     (chrome.storage.local.get as jest.Mock)
       .mockResolvedValueOnce({ [SYSTEM_CHECK_STORAGE_KEY]: { ...base, criticalModal: 'pending' } })
       .mockResolvedValueOnce({ [SYSTEM_CHECK_STORAGE_KEY]: { ...base, localAiState: 'off-user-choice' } })
@@ -124,7 +141,7 @@ describe('system-check storage', () => {
 
   test('recordRecommendationDeclined stamps recommendationDeclinedAt without touching localAiState', async () => {
     const base = {
-      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'enabled' as const,
     };
     (chrome.storage.local.get as jest.Mock).mockResolvedValueOnce({ [SYSTEM_CHECK_STORAGE_KEY]: base });

@@ -92,7 +92,7 @@ export function chipReasonMessage(reason: ChipReason): ChipMessage {
     case 'low-memory-warning':
       return {
         title: 'Local AI may be resource-intensive',
-        detail: 'Browser-reported memory is between 8 GB and 14 GB. Watch for slowdowns while Local AI is on.',
+        detail: 'Browser-reported memory is between 2 GB and 4 GB. Watch for slowdowns while Local AI is on.',
       };
     case 'unknown-memory':
       return {

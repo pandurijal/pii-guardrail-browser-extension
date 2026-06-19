@@ -3,9 +3,9 @@ import type { SystemCompatibilityStatus } from '../../src/shared/message-types';
 
 const baseStatus: SystemCompatibilityStatus = {
   schemaVersion: 1,
-  policyVersion: 1,
+  policyVersion: 2,
   checkedAt: 1,
-  browserMemoryGb: 8,
+  browserMemoryGb: 2,
   webGpu: 'available',
   tier: 'critical',
   recommendation: 'auto-disable-local-ai',
@@ -22,8 +22,8 @@ describe('shouldShowCriticalLocalAiModal', () => {
 
   test.each([
     ['dismissed modal', { criticalModal: 'dismissed' as const }],
-    ['warning tier', { tier: 'warning' as const, recommendation: 'warn' as const, browserMemoryGb: 12 }],
-    ['ok tier', { tier: 'ok' as const, recommendation: 'none' as const, browserMemoryGb: 16 }],
+    ['warning tier', { tier: 'warning' as const, recommendation: 'warn' as const, browserMemoryGb: 4 }],
+    ['ok tier', { tier: 'ok' as const, recommendation: 'none' as const, browserMemoryGb: 8 }],
     ['unknown tier', { tier: 'unknown' as const, recommendation: 'warn' as const, browserMemoryGb: undefined }],
     ['user-choice off', { localAiState: 'off-user-choice' as const }],
     ['load failure off', { localAiState: 'off-load-failure' as const }],

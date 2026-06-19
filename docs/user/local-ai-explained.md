@@ -30,7 +30,7 @@ When Local AI is turned off, Privacy Guardrail unloads the Local AI runtime so C
 
 When Local AI is on, the runtime may be loaded by a paste scan, an explicit warmup action, the popup on capable systems, or supported-page activity on capable systems. A capable system currently means:
 
-- browser-reported memory is greater than 14 GB
+- browser-reported memory is greater than 4 GB
 - passive WebGPU availability is detected
 - the runtime is not known to be using CPU/WASM fallback
 
@@ -43,8 +43,8 @@ By default, the runtime unloads after 10 minutes of inactivity. The options page
 Local AI inference is resource-intensive. The extension checks the browser-reported memory and WebGPU availability passively and adapts:
 
 - **Recommended:** at least 16 GB of RAM and a WebGPU-capable GPU. This is the smooth-experience target.
-- **More than 8 GB and up to 14 GB:** Local AI stays on, but a slowdown warning is surfaced. The 14 GB threshold gives some leeway below the 16 GB recommendation so most modern laptops are not flagged unnecessarily.
-- **8 GB or less:** the extension automatically disables Local AI on this run to avoid exhausting browser resources. Pattern detection continues to run. You can override this from the options page if you accept the risk of browser slowdowns.
+- **More than 2 GB and up to 4 GB:** Local AI stays on, but a slowdown warning is surfaced.
+- **2 GB or less:** the extension automatically disables Local AI on this run to avoid exhausting browser resources. Pattern detection continues to run. You can override this from the options page if you accept the risk of browser slowdowns.
 - **No WebGPU:** Local AI falls back to a CPU/WASM execution path. It still runs locally, just more slowly.
 - **Pattern-only detection** does not need WebGPU and is not affected by the memory thresholds.
 

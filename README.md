@@ -48,13 +48,13 @@ For an unpacked developer install, see [`docs/developer/building.md`](docs/devel
 
 - Chrome desktop stable (latest).
 - **Recommended:** ≥ 16 GB RAM and a WebGPU-capable GPU for smooth Local AI detection.
-- **Minimum for Local AI:** more than 8 GB browser-reported memory. On 8 GB or less, the extension auto-disables Local AI and runs pattern-only detection. Between 8 GB and 14 GB, Local AI stays on but a slowdown warning may appear.
-- On capable systems (more than 14 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback), Local AI may warm automatically while the user is active on a supported chat page.
+- **Minimum for Local AI:** more than 2 GB browser-reported memory. On 2 GB or less, the extension auto-disables Local AI and runs pattern-only detection. Between 2 GB and 4 GB, Local AI stays on but a slowdown warning may appear.
+- On capable systems (more than 4 GB browser-reported memory, passive WebGPU available, and no known CPU/WASM fallback), Local AI may warm automatically while the user is active on a supported chat page.
 - Without WebGPU, Local AI falls back to CPU/WASM execution (slower but functional).
 - The default Local AI model is a compact 4-bit (q4f16) build that keeps memory around 1 GB while loaded and is also used for CPU/WASM fallback; a full-precision (fp16) WebGPU model can be selected in the settings at a higher memory cost.
 - Pattern-only detection runs on any supported Chrome system regardless of memory or WebGPU.
 
-These requirements are high because Local AI runs a transformer NER model entirely in the browser. Lowering them is an active roadmap item.
+These requirements are heuristic because Local AI runs a transformer NER model entirely in the browser and Chrome reports memory in coarse buckets.
 
 ## How it works
 

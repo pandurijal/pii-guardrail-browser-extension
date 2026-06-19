@@ -20,10 +20,10 @@
 
 	const scenarios: { id: DebugSystemCheckScenario; label: string; hint: string }[] = [
 		{ id: 'ok-enabled', label: 'OK · Local AI on', hint: '32 GB · WebGPU available · auto-warm allowed' },
-		{ id: 'warning-enabled', label: 'Warning · Local AI on', hint: '12 GB · resource warning banner' },
+		{ id: 'warning-enabled', label: 'Warning · Local AI on', hint: '4 GB · resource warning banner' },
 		{ id: 'unknown-enabled', label: 'Unknown memory · Local AI on', hint: 'memory unavailable · warning banner' },
-		{ id: 'critical-auto-disabled', label: 'Critical · auto-disabled', hint: '8 GB · Local AI off · modal pending' },
-		{ id: 'critical-override', label: 'Critical · re-enabled override', hint: '8 GB · explicit override' },
+		{ id: 'critical-auto-disabled', label: 'Critical · auto-disabled', hint: '2 GB · Local AI off · modal pending' },
+		{ id: 'critical-override', label: 'Critical · re-enabled override', hint: '2 GB · explicit override' },
 		{ id: 'cpu-fallback', label: 'OK · WebGPU unavailable', hint: 'CPU/WASM fallback signal' },
 		{ id: 'load-failure', label: 'Load failure', hint: 'Local AI off · failure banner' },
 		{ id: 'user-off', label: 'User turned Local AI off', hint: 'pattern-only mode' },

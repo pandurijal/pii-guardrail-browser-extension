@@ -16,8 +16,8 @@ Other browsers and sites are outside the first public beta support scope.
 ### System requirements for Local AI
 
 - Recommended: at least 16 GB of RAM and a WebGPU-capable GPU.
-- On 8 GB or less, the extension automatically disables Local AI and uses pattern-only detection.
-- Between 8 GB and 14 GB, Local AI stays on but you may see a slowdown warning.
+- On 2 GB or less, the extension automatically disables Local AI and uses pattern-only detection.
+- Between 2 GB and 4 GB, Local AI stays on but you may see a slowdown warning.
 - Without WebGPU, Local AI falls back to a slower CPU/WASM path.
 
 See [Local AI explained](local-ai-explained.md#system-requirements) for the full details.

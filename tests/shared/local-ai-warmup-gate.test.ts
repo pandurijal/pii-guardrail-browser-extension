@@ -14,7 +14,7 @@ const baseSettings: Settings = {
 
 const baseStatus: SystemCompatibilityStatus = {
   schemaVersion: 1,
-  policyVersion: 1,
+  policyVersion: 2,
   checkedAt: 0,
   browserMemoryGb: 32,
   webGpu: 'available',
@@ -36,11 +36,11 @@ describe('shouldAutoWarmLocalAi', () => {
   });
 
   test('does not warm on warning tier', () => {
-    expect(shouldAutoWarmLocalAi(baseSettings, { ...baseStatus, tier: 'warning', browserMemoryGb: 12 })).toBe(false);
+    expect(shouldAutoWarmLocalAi(baseSettings, { ...baseStatus, tier: 'warning', browserMemoryGb: 4 })).toBe(false);
   });
 
   test('does not warm on critical tier', () => {
-    expect(shouldAutoWarmLocalAi(baseSettings, { ...baseStatus, tier: 'critical', browserMemoryGb: 8 })).toBe(false);
+    expect(shouldAutoWarmLocalAi(baseSettings, { ...baseStatus, tier: 'critical', browserMemoryGb: 2 })).toBe(false);
   });
 
   test('does not warm on unknown memory', () => {
@@ -52,7 +52,7 @@ describe('shouldAutoWarmLocalAi', () => {
       shouldAutoWarmLocalAi(baseSettings, {
         ...baseStatus,
         tier: 'critical',
-        browserMemoryGb: 8,
+        browserMemoryGb: 2,
         localAiState: 'enabled-low-memory-override',
       }),
     ).toBe(false);

@@ -431,7 +431,7 @@ function buildDebugSystemCheckResult(
       };
     case 'warning-enabled':
       return {
-        ...buildSystemCheckResult({ browserMemoryGb: 12, webGpu: 'available' }, now, previous),
+        ...buildSystemCheckResult({ browserMemoryGb: 4, webGpu: 'available' }, now, previous),
         localAiState: 'enabled',
         criticalModal: 'none',
         lowMemoryOverride: false,
@@ -449,7 +449,7 @@ function buildDebugSystemCheckResult(
       };
     case 'critical-auto-disabled':
       return {
-        ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, now, previous),
+        ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, now, previous),
         localAiState: 'off-low-memory-auto',
         criticalModal: 'pending',
         lowMemoryOverride: false,
@@ -457,7 +457,7 @@ function buildDebugSystemCheckResult(
       };
     case 'critical-override':
       return {
-        ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, now, previous),
+        ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, now, previous),
         localAiState: 'enabled-low-memory-override',
         criticalModal: 'dismissed',
         lowMemoryOverride: true,

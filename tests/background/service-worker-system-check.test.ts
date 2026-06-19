@@ -19,7 +19,7 @@ describe('background system compatibility orchestration', () => {
     installedListener = undefined;
     sendMessage = jest.fn().mockImplementation(async (message) => {
       if (message?.type === 'COLLECT_SYSTEM_SIGNALS') {
-        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 8, webGpu: 'available' } };
+        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 2, webGpu: 'available' } };
       }
       return {};
     });
@@ -90,7 +90,7 @@ describe('background system compatibility orchestration', () => {
     await importWorker();
     sendMessage.mockImplementationOnce(async () => ({
       type: 'SYSTEM_SIGNALS',
-      payload: { browserMemoryGb: 12, webGpu: 'available' },
+      payload: { browserMemoryGb: 4, webGpu: 'available' },
     }));
 
     await installedListener?.();
@@ -105,7 +105,7 @@ describe('background system compatibility orchestration', () => {
   test('existing low-memory override prevents repeated automatic disabling', async () => {
     await importWorker();
     store[SYSTEM_CHECK_STORAGE_KEY] = {
-      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'enabled-low-memory-override',
       lowMemoryOverride: true,
     };
@@ -117,10 +117,35 @@ describe('background system compatibility orchestration', () => {
     expect(createDocument).not.toHaveBeenCalled();
   });
 
-  test('dismiss critical modal message persists dismissal', async () => {
+  test('re-enables Local AI when an old auto-disable record is no longer critical', async () => {
     await importWorker();
     store[SYSTEM_CHECK_STORAGE_KEY] = {
       ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      policyVersion: 1,
+      tier: 'critical',
+      recommendation: 'auto-disable-local-ai',
+      localAiState: 'off-low-memory-auto',
+      criticalModal: 'dismissed',
+    };
+    store[SETTINGS_KEY] = { ...DEFAULT_SETTINGS, nerProvider: 'off' };
+
+    await installedListener?.();
+
+    expect(store[SETTINGS_KEY]).toEqual(expect.objectContaining({ nerProvider: 'transformers' }));
+    expect(store[SYSTEM_CHECK_STORAGE_KEY]).toEqual(expect.objectContaining({
+      policyVersion: 2,
+      tier: 'ok',
+      recommendation: 'none',
+      localAiState: 'enabled',
+      criticalModal: 'none',
+    }));
+    expect(createDocument).not.toHaveBeenCalled();
+  });
+
+  test('dismiss critical modal message persists dismissal', async () => {
+    await importWorker();
+    store[SYSTEM_CHECK_STORAGE_KEY] = {
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'off-low-memory-auto',
       criticalModal: 'pending',
     };
@@ -138,7 +163,7 @@ describe('background system compatibility orchestration', () => {
 
   test('explicit Local AI enable on critical systems records low-memory override', async () => {
     await importWorker();
-    store[SYSTEM_CHECK_STORAGE_KEY] = buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100);
+    store[SYSTEM_CHECK_STORAGE_KEY] = buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100);
     store[SETTINGS_KEY] = { ...DEFAULT_SETTINGS, nerProvider: 'off' };
 
     const response = await new Promise((resolve) => {
@@ -282,7 +307,7 @@ describe('background system compatibility orchestration', () => {
     store[SYSTEM_CHECK_STORAGE_KEY] = buildSystemCheckResult({ browserMemoryGb: 32, webGpu: 'available' }, 100);
     sendMessage.mockImplementation(async (message) => {
       if (message?.type === 'COLLECT_SYSTEM_SIGNALS') {
-        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 12, webGpu: 'available' } };
+        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 4, webGpu: 'available' } };
       }
       return {};
     });
@@ -304,7 +329,7 @@ describe('background system compatibility orchestration', () => {
     store[SYSTEM_CHECK_STORAGE_KEY] = buildSystemCheckResult({ browserMemoryGb: 32, webGpu: 'available' }, 100);
     sendMessage.mockImplementation(async (message) => {
       if (message?.type === 'COLLECT_SYSTEM_SIGNALS') {
-        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 8, webGpu: 'available' } };
+        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 2, webGpu: 'available' } };
       }
       return {};
     });
@@ -327,13 +352,13 @@ describe('background system compatibility orchestration', () => {
     await importWorker();
     store[SETTINGS_KEY] = { ...DEFAULT_SETTINGS, nerProvider: 'transformers' };
     store[SYSTEM_CHECK_STORAGE_KEY] = {
-      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'enabled-low-memory-override',
       lowMemoryOverride: true,
     };
     sendMessage.mockImplementation(async (message) => {
       if (message?.type === 'COLLECT_SYSTEM_SIGNALS') {
-        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 8, webGpu: 'available' } };
+        return { type: 'SYSTEM_SIGNALS', payload: { browserMemoryGb: 2, webGpu: 'available' } };
       }
       return {};
     });
@@ -375,7 +400,7 @@ describe('background system compatibility orchestration', () => {
     await importWorker();
     store[SETTINGS_KEY] = { ...DEFAULT_SETTINGS, nerProvider: 'transformers' };
     store[SYSTEM_CHECK_STORAGE_KEY] = {
-      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'enabled',
       criticalModal: 'dismissed',
     };
@@ -398,7 +423,7 @@ describe('background system compatibility orchestration', () => {
     await importWorker();
     store[SETTINGS_KEY] = { ...DEFAULT_SETTINGS, nerProvider: 'transformers' };
     store[SYSTEM_CHECK_STORAGE_KEY] = {
-      ...buildSystemCheckResult({ browserMemoryGb: 8, webGpu: 'available' }, 100),
+      ...buildSystemCheckResult({ browserMemoryGb: 2, webGpu: 'available' }, 100),
       localAiState: 'enabled',
     };
 

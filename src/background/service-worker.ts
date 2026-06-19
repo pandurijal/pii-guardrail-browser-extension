@@ -207,7 +207,9 @@ async function collectPassiveSignals(): Promise<SystemSignalsResponse["payload"]
 
 async function runPassiveSystemCheck(): Promise<SystemCompatibilityStatusResponse> {
   const previous = await loadSystemCheckResult();
-  if (previous) return { type: "SYSTEM_COMPATIBILITY_STATUS", payload: previous };
+  if (previous) {
+    return { type: "SYSTEM_COMPATIBILITY_STATUS", payload: await reconcileSystemCheckWithSettings(previous) };
+  }
 
   const signals = await collectPassiveSignals();
   const result = await applyCriticalLocalAiRecommendation(buildSystemCheckResult(signals));
@@ -217,8 +219,31 @@ async function runPassiveSystemCheck(): Promise<SystemCompatibilityStatusRespons
 
 async function ensureSystemCheckResult(): Promise<SystemCompatibilityStatusResponse> {
   const existing = await loadSystemCheckResult();
-  if (existing) return { type: "SYSTEM_COMPATIBILITY_STATUS", payload: existing };
+  if (existing) {
+    return { type: "SYSTEM_COMPATIBILITY_STATUS", payload: await reconcileSystemCheckWithSettings(existing) };
+  }
   return runPassiveSystemCheck();
+}
+
+async function reconcileSystemCheckWithSettings(result: SystemCheckResult): Promise<SystemCheckResult> {
+  if (result.localAiState !== "off-low-memory-auto" || result.tier === "critical") {
+    return result;
+  }
+
+  const settings = await loadSettings();
+  if (settings.nerProvider !== "off") return result;
+
+  const next: SystemCheckResult = {
+    ...result,
+    localAiState: "enabled",
+    criticalModal: "none",
+    lowMemoryOverride: false,
+    recommendationDeclinedAt: undefined,
+    loadFailure: undefined,
+  };
+  await saveSettings({ nerProvider: "transformers" });
+  await saveSystemCheckResult(next);
+  return next;
 }
 
 async function cancelOffscreenBestEffort(requestId: string): Promise<void> {

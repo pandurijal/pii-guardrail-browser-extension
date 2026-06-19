@@ -1,4 +1,6 @@
-export const SYSTEM_COMPATIBILITY_POLICY_VERSION = 1;
+export const SYSTEM_COMPATIBILITY_POLICY_VERSION = 2;
+export const CRITICAL_BROWSER_MEMORY_GB = 2;
+export const WARNING_BROWSER_MEMORY_GB = 4;
 
 export type BrowserMemoryTier = 'critical' | 'warning' | 'ok' | 'unknown';
 export type WebGpuAvailability = 'available' | 'unavailable' | 'unknown';
@@ -21,8 +23,8 @@ export function classifyBrowserMemory(browserMemoryGb?: number): BrowserMemoryTi
   if (typeof browserMemoryGb !== 'number' || !Number.isFinite(browserMemoryGb) || browserMemoryGb <= 0) {
     return 'unknown';
   }
-  if (browserMemoryGb <= 8) return 'critical';
-  if (browserMemoryGb <= 14) return 'warning';
+  if (browserMemoryGb <= CRITICAL_BROWSER_MEMORY_GB) return 'critical';
+  if (browserMemoryGb <= WARNING_BROWSER_MEMORY_GB) return 'warning';
   return 'ok';
 }
 
@@ -31,13 +33,13 @@ export function decideSystemCompatibility(signals: PassiveSystemSignals): System
   const notes: string[] = [];
 
   if (tier === 'critical') {
-    notes.push('Browser-reported memory is 8 GB or less. Local AI detection may exhaust resources on this system.');
+    notes.push('Browser-reported memory is 2 GB or less. Local AI detection may exhaust resources on this system.');
   } else if (tier === 'warning') {
-    notes.push('Browser-reported memory is greater than 8 GB and up to 14 GB. Local AI detection may be resource-intensive.');
+    notes.push('Browser-reported memory is greater than 2 GB and up to 4 GB. Local AI detection may be resource-intensive.');
   } else if (tier === 'unknown') {
     notes.push('Browser-reported memory is unavailable, so compatibility could not be fully assessed.');
   } else {
-    notes.push('Browser-reported memory is above 14 GB. No resource concern is known.');
+    notes.push('Browser-reported memory is above 4 GB. No resource concern is known.');
   }
 
   if (signals.webGpu === 'unavailable') {

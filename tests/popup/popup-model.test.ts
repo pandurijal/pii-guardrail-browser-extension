@@ -84,7 +84,7 @@ function detectPiiCalls(sendMessage: jest.Mock): unknown[] {
 function okStatus(overrides: Partial<SystemCompatibilityStatus> = {}): SystemCompatibilityStatus {
   return {
     schemaVersion: 1,
-    policyVersion: 1,
+    policyVersion: 2,
     checkedAt: 0,
     browserMemoryGb: 32,
     webGpu: 'available',
@@ -124,7 +124,7 @@ describe('createAppModels — resource-safe popup', () => {
 
   test('warning tier does not auto-warm', async () => {
     const h = await setupHarness({
-      systemStatus: okStatus({ tier: 'warning', browserMemoryGb: 12 }),
+      systemStatus: okStatus({ tier: 'warning', browserMemoryGb: 4 }),
     });
     const { createAppModels } = jest.requireActual<typeof import('../../src/popup/popup-model.svelte')>('../../src/popup/popup-model.svelte.ts');
     createAppModels();
@@ -136,7 +136,7 @@ describe('createAppModels — resource-safe popup', () => {
     const h = await setupHarness({
       systemStatus: okStatus({
         tier: 'critical',
-        browserMemoryGb: 8,
+        browserMemoryGb: 2,
         localAiState: 'enabled-low-memory-override',
       }),
     });
@@ -190,7 +190,7 @@ describe('createAppModels — resource-safe popup', () => {
       settings: { nerProvider: 'off' },
       systemStatus: okStatus({
         tier: 'critical',
-        browserMemoryGb: 8,
+        browserMemoryGb: 2,
         localAiState: 'off-low-memory-auto',
       }),
     });
@@ -204,14 +204,14 @@ describe('createAppModels — resource-safe popup', () => {
 
   test('exposes a warning summary on warning tier with Local AI on', async () => {
     await setupHarness({
-      systemStatus: okStatus({ tier: 'warning', browserMemoryGb: 12 }),
+      systemStatus: okStatus({ tier: 'warning', browserMemoryGb: 4 }),
     });
     const { createAppModels } = jest.requireActual<typeof import('../../src/popup/popup-model.svelte')>('../../src/popup/popup-model.svelte.ts');
     const app = createAppModels();
     await flushInit();
     const summary = get(app.protection.resourceSummary);
     expect(summary?.tone).toBe('warning');
-    expect(summary?.detail).toMatch(/12 GB/);
+    expect(summary?.detail).toMatch(/4 GB/);
   });
 
   test('OK tier with Local AI on produces no resource summary copy', async () => {

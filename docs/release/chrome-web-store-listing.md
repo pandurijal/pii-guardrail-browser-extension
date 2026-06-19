@@ -31,6 +31,10 @@ This is a public beta.
 
 Detection is assistive: it helps you catch things, but it will not catch everything and it is not a compliance or data-loss-prevention product.
 
+What is improved in this release
+- Much lower Local AI memory use. The default compact 4-bit model and runtime fixes reduced typical extension RAM while Local AI is loaded from multi-gigabyte beta behavior to around 1 GB in local validation, with lower GPU memory use as well.
+- More systems can keep Local AI enabled by default. The extension now only auto-disables Local AI at 2 GB or less of browser-reported memory, while still warning on 2–4 GB systems.
+
 What it does
 - Intercepts pastes on supported chat sites and offers a local review step.
 - Highlights potentially personal or sensitive spans such as names, emails, phone numbers, addresses, IBANs, credit card numbers, IP addresses, organizations, and locations.
@@ -50,8 +54,9 @@ Generic or custom websites are not supported.
 System requirements
 - Chrome desktop stable (latest).
 - Recommended: 16 GB RAM or more and a WebGPU-capable GPU for smooth Local AI detection.
-- Minimum for Local AI: more than 8 GB browser-reported memory. On 8 GB or less the extension automatically disables Local AI and runs pattern-only detection. Between 8 GB and 14 GB Local AI stays on but a slowdown warning may appear.
+- Minimum for Local AI: more than 2 GB browser-reported memory. On 2 GB or less the extension automatically disables Local AI and runs pattern-only detection. Between 2 GB and 4 GB Local AI stays on but a slowdown warning may appear.
 - Without WebGPU, Local AI falls back to slower CPU/WASM execution.
+- The default Local AI model is a compact q4f16 build that typically keeps the loaded extension runtime around 1 GB of RAM in local validation, a major reduction from earlier beta builds.
 - Pattern-only detection runs on any supported Chrome system.
 
 Privacy posture

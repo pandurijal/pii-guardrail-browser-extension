@@ -45,9 +45,9 @@ describe('EntityType contract', () => {
       type: 'SYSTEM_COMPATIBILITY_STATUS',
       payload: {
         schemaVersion: 1,
-        policyVersion: 1,
+        policyVersion: 2,
         checkedAt: 1,
-        browserMemoryGb: 8,
+        browserMemoryGb: 2,
         webGpu: 'unknown',
         tier: 'critical',
         recommendation: 'auto-disable-local-ai',
