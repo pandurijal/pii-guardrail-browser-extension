@@ -256,7 +256,7 @@
 .pg-entity-row {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) auto 36px 24px;
-  align-items: center;
+  align-items: start;
   column-gap: 4px;
   padding: 5px 4px;
   border-bottom: var(--border-hairline);
@@ -338,9 +338,8 @@
   font-family: var(--font-sans);
   font-size: 13px;
   color: var(--color-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   min-width: 0;
 }
 
